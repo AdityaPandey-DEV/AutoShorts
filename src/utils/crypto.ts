@@ -1,0 +1,68 @@
+import crypto from 'crypto';
+
+const ALGO = 'aes-256-gcm';
+const MASTER_KEY = process.env.MASTER_KEY as string;
+
+if (!MASTER_KEY) {
+  throw new Error('MASTER_KEY environment variable is not set');
+}
+
+// Parse master key - support both hex and base64, but expect hex
+let KEY: Buffer;
+try {
+  KEY = Buffer.from(MASTER_KEY, 'hex');
+  if (KEY.length !== 32) {
+    throw new Error('MASTER_KEY must be 32 bytes (64 hex characters)');
+  }
+} catch (err) {
+  throw new Error(`Invalid MASTER_KEY format: ${err instanceof Error ? err.message : 'unknown error'}`);
+}
+
+export interface EncryptedData {
+  encrypted: Buffer;
+  iv: Buffer;
+  authTag: Buffer;
+}
+
+/**
+ * Encrypt plaintext using AES-256-GCM
+ * @param plain - Plaintext string to encrypt
+ * @returns Object containing encrypted buffer, IV, and auth tag
+ */
+export function encryptText(plain: string): EncryptedData {
+  const iv = crypto.randomBytes(12); // 12 bytes for GCM
+  const cipher = crypto.createCipheriv(ALGO, KEY, iv);
+  
+  const enc = Buffer.concat([
+    cipher.update(plain, 'utf8'),
+    cipher.final()
+  ]);
+  
+  const authTag = cipher.getAuthTag();
+  
+  return {
+    encrypted: enc,
+    iv,
+    authTag
+  };
+}
+
+/**
+ * Decrypt ciphertext using AES-256-GCM
+ * @param encrypted - Encrypted buffer
+ * @param iv - Initialization vector
+ * @param authTag - Authentication tag
+ * @returns Decrypted plaintext string
+ */
+export function decryptText(encrypted: Buffer, iv: Buffer, authTag: Buffer): string {
+  const decipher = crypto.createDecipheriv(ALGO, KEY, iv);
+  decipher.setAuthTag(authTag);
+  
+  const decrypted = Buffer.concat([
+    decipher.update(encrypted),
+    decipher.final()
+  ]);
+  
+  return decrypted.toString('utf8');
+}
+

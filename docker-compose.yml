@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: autoshorts_db
+    environment:
+      POSTGRES_DB: autoshorts
+      POSTGRES_USER: autoshorts
+      POSTGRES_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - autoshorts_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoshorts"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: autoshorts_redis
+    ports:
+      - '6379:6379'
+    networks:
+      - autoshorts_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.app
+    container_name: autoshorts_app
+    environment:
+      - PORT=4000
+      - DATABASE_URL=postgres://autoshorts:password@db:5432/autoshorts
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-change_this}
+      - MASTER_KEY=${MASTER_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - OAUTH_REDIRECT_URI=${OAUTH_REDIRECT_URI:-http://localhost:4000/auth/youtube/callback}
+      - NODE_ENV=${NODE_ENV:-production}
+    ports:
+      - '4000:4000'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - autoshorts_net
+    volumes:
+      - ./tmp:/tmp/autoshorts
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+    container_name: autoshorts_worker
+    environment:
+      - DATABASE_URL=postgres://autoshorts:password@db:5432/autoshorts
+      - REDIS_URL=redis://redis:6379
+      - MASTER_KEY=${MASTER_KEY}
+      - NODE_ENV=${NODE_ENV:-production}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - autoshorts_net
+    volumes:
+      - ./tmp:/tmp/autoshorts
+    restart: unless-stopped
+
+volumes:
+  db_data:
+    driver: local
+
+networks:
+  autoshorts_net:
+    driver: bridge
+

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - AutoShorts</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo { font-size: 24px; font-weight: bold; color: #667eea; }
+        .nav a { margin-left: 20px; color: #333; text-decoration: none; }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 50px;
+            color: #333;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        .plan-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .plan-card.featured {
+            border: 3px solid #667eea;
+            transform: scale(1.05);
+        }
+        .plan-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .plan-price {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .plan-period {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .plan-features {
+            list-style: none;
+            margin: 20px 0;
+        }
+        .plan-features li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .plan-features li:before {
+            content: '✓ ';
+            color: #667eea;
+            font-weight: bold;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .btn:hover { background: #5568d3; }
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .payment-options {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">AutoShorts</div>
+            <nav class="nav">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="pricing.html">Pricing</a>
+                <a href="settings.html">Settings</a>
+                <a href="#" onclick="logout(); return false;">Logout</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Choose Your Plan</h1>
+        <div class="pricing-grid">
+            <div class="plan-card">
+                <div class="plan-name">Starter</div>
+                <div class="plan-price">$9</div>
+                <div class="plan-period">per month</div>
+                <ul class="plan-features">
+                    <li>10 videos per month</li>
+                    <li>30 second max length</li>
+                    <li>720p quality</li>
+                    <li>Basic features</li>
+                </ul>
+                <button class="btn" onclick="subscribe('starter', 'monthly')">Get Started</button>
+            </div>
+            <div class="plan-card featured">
+                <div style="background: #667eea; color: white; padding: 5px 10px; border-radius: 5px; display: inline-block; margin-bottom: 10px; font-size: 12px;">POPULAR</div>
+                <div class="plan-name">Pro</div>
+                <div class="plan-price">$29</div>
+                <div class="plan-period">per month</div>
+                <ul class="plan-features">
+                    <li>50 videos per month</li>
+                    <li>60 second max length</li>
+                    <li>1080p quality</li>
+                    <li>Custom branding</li>
+                    <li>Custom TTS voices</li>
+                    <li>Advanced analytics</li>
+                </ul>
+                <button class="btn" onclick="subscribe('pro', 'monthly')">Get Started</button>
+            </div>
+            <div class="plan-card">
+                <div class="plan-name">Enterprise</div>
+                <div class="plan-price">$99</div>
+                <div class="plan-period">per month</div>
+                <ul class="plan-features">
+                    <li>Unlimited videos</li>
+                    <li>60 second max length</li>
+                    <li>4K quality</li>
+                    <li>Priority processing</li>
+                    <li>API access</li>
+                    <li>Custom TTS voices</li>
+                    <li>Advanced analytics</li>
+                </ul>
+                <button class="btn" onclick="subscribe('enterprise', 'monthly')">Get Started</button>
+            </div>
+        </div>
+        <div class="payment-options">
+            <p>Secure payment powered by Stripe and PayPal</p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin.replace(':3000', ':4000') || 'http://localhost:4000';
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            window.location.href = 'signin.html';
+        }
+
+        async function subscribe(planName, period) {
+            const provider = confirm('Choose payment method:\n\nOK = Stripe\nCancel = PayPal');
+            
+            try {
+                const endpoint = provider 
+                    ? `/payments/checkout/stripe`
+                    : `/payments/checkout/paypal`;
+                
+                const res = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ planName, period })
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    if (data.url) {
+                        window.location.href = data.url;
+                    } else if (data.approvalUrl) {
+                        window.location.href = data.approvalUrl;
+                    }
+                } else {
+                    alert(data.error || 'Failed to initiate payment');
+                }
+            } catch (error) {
+                alert('Error processing payment');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'signin.html';
+        }
+    </script>
+</body>
+</html>
+

@@ -7,6 +7,9 @@ import Card from '@/components/ui/Card';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export const metadata = {
   title: 'Dashboard - AutoShorts',
   description: 'Your AutoShorts dashboard',

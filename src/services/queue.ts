@@ -53,6 +53,36 @@ export function getQueue(): Queue {
   return _queue;
 }
 
-export const generateUploadQueue = getQueue();
+// Export lazy getter - don't initialize at module load
+export function getGenerateUploadQueue(): Queue {
+  return getQueue();
+}
+
+// For backwards compatibility - lazy initialization
+// This will only initialize when first accessed
+let _exportedQueue: Queue | null = null;
+export const generateUploadQueue = {
+  get add() {
+    if (!_exportedQueue) _exportedQueue = getQueue();
+    return _exportedQueue.add.bind(_exportedQueue);
+  },
+  get getJob() {
+    if (!_exportedQueue) _exportedQueue = getQueue();
+    return _exportedQueue.getJob.bind(_exportedQueue);
+  },
+  get getJobs() {
+    if (!_exportedQueue) _exportedQueue = getQueue();
+    return _exportedQueue.getJobs.bind(_exportedQueue);
+  },
+  get remove() {
+    if (!_exportedQueue) _exportedQueue = getQueue();
+    return _exportedQueue.remove.bind(_exportedQueue);
+  },
+  get close() {
+    if (!_exportedQueue) _exportedQueue = getQueue();
+    return _exportedQueue.close.bind(_exportedQueue);
+  },
+} as Queue;
+
 export { getConnection };
 

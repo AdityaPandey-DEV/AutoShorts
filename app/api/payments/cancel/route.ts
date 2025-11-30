@@ -5,6 +5,9 @@ import { cancelSubscription } from '@/src/services/subscription';
 import { cancelStripeSubscription } from '@/src/services/stripe';
 import { logger } from '@/src/utils/logger';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();

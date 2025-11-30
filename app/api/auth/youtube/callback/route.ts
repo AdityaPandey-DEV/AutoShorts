@@ -3,6 +3,9 @@ import { google } from 'googleapis';
 import { storeApiKey } from '@/src/services/secretStore';
 import { logger } from '@/src/utils/logger';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 function getOAuth2Client() {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;

@@ -5,6 +5,9 @@ import pool from '@/src/db';
 import { JobData } from '@/src/types';
 import { logger } from '@/src/utils/logger';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     // Check video limit (includes auth check)

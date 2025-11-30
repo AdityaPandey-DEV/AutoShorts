@@ -3,6 +3,9 @@ import { handleWebhook } from '@/src/services/stripe';
 import { logger } from '@/src/utils/logger';
 import Stripe from 'stripe';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })

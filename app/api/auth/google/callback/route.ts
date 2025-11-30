@@ -5,6 +5,9 @@ import { startTrial } from '@/src/services/subscription';
 import { generateToken, setAuthToken } from '@/lib/auth';
 import { logger } from '@/src/utils/logger';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 function getGoogleOAuthClient() {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;

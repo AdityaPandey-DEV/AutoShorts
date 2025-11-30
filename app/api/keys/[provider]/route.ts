@@ -3,6 +3,9 @@ import { requireAuth } from '@/lib/auth';
 import { deleteApiKey } from '@/src/services/secretStore';
 import { logger } from '@/src/utils/logger';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { provider: string } }

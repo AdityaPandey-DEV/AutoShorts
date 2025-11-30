@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { captureOrder } from '@/src/services/paypal';
 import { logger } from '@/src/utils/logger';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const { orderId } = await request.json();

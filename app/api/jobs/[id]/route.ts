@@ -3,6 +3,9 @@ import { requireAuth } from '@/lib/auth';
 import pool from '@/src/db';
 import { logger } from '@/src/utils/logger';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

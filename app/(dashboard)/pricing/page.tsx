@@ -4,6 +4,9 @@ import Card from '@/components/ui/Card';
 import PricingCard from '@/components/dashboard/PricingCard';
 import { getAllPlans } from '@/src/config/plans';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export const metadata = {
   title: 'Pricing - AutoShorts',
   description: 'Choose your AutoShorts plan',

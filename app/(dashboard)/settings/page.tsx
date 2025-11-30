@@ -5,6 +5,9 @@ import SettingsForm from '@/components/dashboard/SettingsForm';
 import ApiKeysManager from '@/components/dashboard/ApiKeysManager';
 import Button from '@/components/ui/Button';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export const metadata = {
   title: 'Settings - AutoShorts',
   description: 'Manage your AutoShorts account settings',

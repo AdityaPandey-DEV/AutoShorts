@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
@@ -29,28 +29,26 @@ export default function FlowchartNode({
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
 
-  // Update base position if prop changes
-  if (basePositionRef.current[0] !== position[0] || 
-      basePositionRef.current[1] !== position[1] || 
-      basePositionRef.current[2] !== position[2]) {
+  // Use useEffect to update base position when prop changes
+  useEffect(() => {
     basePositionRef.current = position;
-  }
+  }, [position[0], position[1], position[2]]);
 
   useFrame((state) => {
-    if (groupRef.current && meshRef.current) {
-      // Set group position to the base position (this should be static)
-      groupRef.current.position.set(...basePositionRef.current);
-      
-      // Apply floating animation only to the mesh within the group
-      const floatOffset = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
-      meshRef.current.position.y = floatOffset;
-      
-      // Hover scale animation - scale from center
-      if (hovered || clicked) {
-        meshRef.current.scale.lerp(new THREE.Vector3(1.15, 1.15, 1.15), 0.1);
-      } else {
-        meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
-      }
+    if (!groupRef.current || !meshRef.current) return;
+    
+    // Set group position to the base position (this should be static)
+    groupRef.current.position.set(...basePositionRef.current);
+    
+    // Apply floating animation only to the mesh within the group
+    const floatOffset = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+    meshRef.current.position.y = floatOffset;
+    
+    // Hover scale animation - scale from center
+    if (hovered || clicked) {
+      meshRef.current.scale.lerp(new THREE.Vector3(1.15, 1.15, 1.15), 0.1);
+    } else {
+      meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
     }
   });
 
@@ -78,27 +76,31 @@ export default function FlowchartNode({
         />
       </mesh>
       
-      {/* Label */}
-      <Text
-        position={[0, 1.2, 0]}
-        fontSize={0.3}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {label}
-      </Text>
-
-      {/* Icon/Emoji */}
-      {icon && (
+      {/* Label - wrapped in Suspense to prevent ref errors */}
+      <Suspense fallback={null}>
         <Text
-          position={[0, 0, 0.3]}
-          fontSize={0.5}
+          position={[0, 1.2, 0]}
+          fontSize={0.3}
+          color="#ffffff"
           anchorX="center"
           anchorY="middle"
         >
-          {icon}
+          {label}
         </Text>
+      </Suspense>
+
+      {/* Icon/Emoji - wrapped in Suspense to prevent ref errors */}
+      {icon && (
+        <Suspense fallback={null}>
+          <Text
+            position={[0, 0, 0.3]}
+            fontSize={0.5}
+            anchorX="center"
+            anchorY="middle"
+          >
+            {icon}
+          </Text>
+        </Suspense>
       )}
     </group>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
@@ -109,25 +109,29 @@ export default function EditableFlowchartNode({
       </mesh>
       
       {/* Label */}
-      <Text
-        position={[0, 1.2, 0]}
-        fontSize={0.25}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {label}
-      </Text>
+      <Suspense fallback={null}>
+        <Text
+          position={[0, 1.2, 0]}
+          fontSize={0.25}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {label}
+        </Text>
+      </Suspense>
 
       {/* Icon */}
-      <Text
-        position={[0, 0, 0.3]}
-        fontSize={0.5}
-        anchorX="center"
-        anchorY="middle"
-      >
-        {nodeType.icon}
-      </Text>
+      <Suspense fallback={null}>
+        <Text
+          position={[0, 0, 0.3]}
+          fontSize={0.5}
+          anchorX="center"
+          anchorY="middle"
+        >
+          {nodeType.icon}
+        </Text>
+      </Suspense>
 
       {/* Selected indicator */}
       {isSelected && (

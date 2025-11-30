@@ -151,3 +151,74 @@ export async function deleteApiKey(userId: number, provider: string): Promise<vo
   }
 }
 
+/**
+ * Get admin API key for a provider
+ * Admin API keys are stored with the admin user's ID
+ * @param provider - Provider name
+ * @returns Decrypted API key or null if not found
+ */
+export async function getAdminApiKey(provider: string): Promise<string | null> {
+  console.log('[secretStore] getAdminApiKey called:', { provider });
+  
+  const client = await pool.connect();
+  
+  try {
+    // Find admin user
+    console.log('[secretStore] Finding admin user...');
+    const adminResult = await client.query(
+      'SELECT id FROM users WHERE is_admin = true LIMIT 1'
+    );
+    
+    if (!adminResult.rows || adminResult.rows.length === 0) {
+      console.log('[secretStore] No admin user found');
+      return null;
+    }
+    
+    const adminUserId = adminResult.rows[0].id;
+    console.log('[secretStore] Admin user found:', { id: adminUserId });
+    
+    // Get API key for admin user
+    console.log('[secretStore] Fetching API key for admin user...', { userId: adminUserId, provider });
+    const keyResult = await client.query(
+      'SELECT encrypted_value, iv, auth_tag FROM api_keys WHERE user_id = $1 AND provider = $2',
+      [adminUserId, provider]
+    );
+    
+    if (!keyResult.rows || keyResult.rows.length === 0) {
+      console.log('[secretStore] API key not found for admin user');
+      return null;
+    }
+    
+    const { encrypted_value, iv, auth_tag } = keyResult.rows[0];
+    console.log('[secretStore] API key found, decrypting...');
+    
+    try {
+      const decrypted = decryptText(encrypted_value, iv, auth_tag);
+      console.log('[secretStore] API key decrypted successfully');
+      return decrypted;
+    } catch (decryptError: any) {
+      console.error('[secretStore] Decryption failed:');
+      console.error('[secretStore] Raw decrypt error:', decryptError);
+      console.error('[secretStore] Error type:', decryptError?.constructor?.name);
+      console.error('[secretStore] Error message:', decryptError?.message);
+      throw new Error(`Failed to decrypt API key: ${decryptError?.message || 'Unknown decryption error'}`);
+    }
+  } catch (error: any) {
+    console.error('[secretStore] Error in getAdminApiKey:');
+    console.error('[secretStore] Raw error:', error);
+    console.error('[secretStore] Error type:', error?.constructor?.name);
+    console.error('[secretStore] Error code:', error?.code);
+    console.error('[secretStore] Error message:', error?.message);
+    
+    if (error?.code === 'ECONNREFUSED' || error?.code === 'ENOTFOUND') {
+      throw new Error('Database connection failed. Please check DATABASE_URL environment variable.');
+    } else if (error?.code === '42P01') {
+      throw new Error('Database table does not exist. Please run database migrations.');
+    }
+    throw error;
+  } finally {
+    client.release();
+    console.log('[secretStore] Database connection released');
+  }
+}
+

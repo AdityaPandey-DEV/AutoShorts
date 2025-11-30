@@ -1,5 +1,5 @@
 import { generateStory } from './gemini';
-import { getApiKey } from './secretStore';
+import { getAdminApiKey } from './secretStore';
 import axios from 'axios';
 import { logger } from '../utils/logger';
 
@@ -29,10 +29,28 @@ export async function chatWithFlowchartAI(
   },
   conversationHistory: FlowchartAIChatMessage[] = []
 ): Promise<{ response: string; suggestions: FlowchartAISuggestion[] }> {
-  const apiKey = await getApiKey(userId, 'gemini');
+  console.log('[flowchartAI] chatWithFlowchartAI called:', { userId, messageLength: message?.length });
+  
+  // Step 1: Get admin API key (all API keys except YouTube are managed by admin)
+  console.log('[flowchartAI] Step 1: Fetching admin API key for gemini...');
+  let apiKey: string | null;
+  
+  try {
+    apiKey = await getAdminApiKey('gemini');
+    console.log('[flowchartAI] API key fetched:', { hasKey: !!apiKey });
+  } catch (keyError: any) {
+    console.error('[flowchartAI] Error fetching admin API key:');
+    console.error('[flowchartAI] Raw key error:', keyError);
+    console.error('[flowchartAI] Error type:', keyError?.constructor?.name);
+    console.error('[flowchartAI] Error message:', keyError?.message);
+    console.error('[flowchartAI] Error code:', keyError?.code);
+    throw new Error(`Failed to retrieve Gemini API key: ${keyError?.message || 'Unknown error'}`);
+  }
   
   if (!apiKey) {
-    throw new Error('Gemini API key not found. Please add your API key in admin settings first.');
+    const errorMsg = 'Gemini API key not found. Please add your API key in admin settings first.';
+    console.error('[flowchartAI]', errorMsg);
+    throw new Error(errorMsg);
   }
 
   // Build context about current flowchart
@@ -74,11 +92,21 @@ Assistant: Please provide helpful suggestions for creating or modifying the auto
 
 Respond in a helpful, conversational way. If you suggest changes, format them clearly.`;
 
+  // Step 2: Call Gemini API
+  console.log('[flowchartAI] Step 2: Preparing to call Gemini API...');
+  const modelName = 'models/gemini-2.5-flash'; // Use the working model we verified
+  const apiUrl = `${GEMINI_API_BASE}/${modelName}:generateContent?key=${apiKey}`;
+  
   try {
+    console.log('[flowchartAI] Calling Gemini API...', { 
+      url: apiUrl.replace(apiKey, '***'), 
+      modelName,
+      promptLength: fullPrompt?.length 
+    });
     logger.info('Calling Gemini API for flowchart chat');
 
     const response = await axios.post(
-      `${GEMINI_API_BASE}/models/gemini-pro:generateContent?key=${apiKey}`,
+      apiUrl,
       {
         contents: [{
           parts: [{
@@ -96,22 +124,81 @@ Respond in a helpful, conversational way. If you suggest changes, format them cl
         headers: {
           'Content-Type': 'application/json',
         },
+        timeout: 30000, // 30 second timeout
       }
     );
 
-    const aiResponse = response.data.candidates?.[0]?.content?.parts?.[0]?.text || 
+    console.log('[flowchartAI] Gemini API response received');
+    console.log('[flowchartAI] Response status:', response.status);
+    console.log('[flowchartAI] Response has candidates:', !!response.data?.candidates);
+    
+    const aiResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || 
       'I apologize, but I could not generate a response. Please try again.';
+
+    console.log('[flowchartAI] AI response extracted:', { responseLength: aiResponse?.length });
 
     // Parse suggestions from response (simple extraction)
     const suggestions = parseSuggestions(aiResponse, currentFlowchart);
+    console.log('[flowchartAI] Suggestions parsed:', { count: suggestions?.length });
 
     return {
       response: aiResponse,
       suggestions,
     };
   } catch (error: any) {
-    logger.error('Error in flowchart AI chat:', error);
-    throw new Error(`AI chat failed: ${error.response?.data?.error?.message || error.message}`);
+    // Comprehensive error logging
+    console.error('[flowchartAI] ====== ERROR IN GEMINI API CALL ======');
+    console.error('[flowchartAI] Raw error object:', error);
+    console.error('[flowchartAI] Error type:', error?.constructor?.name || typeof error);
+    console.error('[flowchartAI] Error message (direct):', error?.message);
+    console.error('[flowchartAI] Error toString():', error?.toString?.());
+    console.error('[flowchartAI] Error code:', error?.code);
+    console.error('[flowchartAI] Error stack:', error?.stack);
+    
+    if (error?.response) {
+      console.error('[flowchartAI] HTTP Status:', error.response.status);
+      console.error('[flowchartAI] HTTP Status Text:', error.response.statusText);
+      console.error('[flowchartAI] Response data:', JSON.stringify(error.response.data, null, 2));
+      
+      if (error.response.data?.error) {
+        const apiError = error.response.data.error;
+        console.error('[flowchartAI] API Error message:', apiError.message);
+        console.error('[flowchartAI] API Error code:', apiError.code);
+        console.error('[flowchartAI] API Error status:', apiError.status);
+      }
+    } else if (error?.request) {
+      console.error('[flowchartAI] Request was made but no response received');
+      console.error('[flowchartAI] Request config:', error.config);
+    }
+    
+    console.error('[flowchartAI] ======================================');
+    
+    // Also use logger
+    logger.error('Error in flowchart AI chat:', {
+      rawError: error,
+      errorType: error?.constructor?.name || typeof error,
+      message: error?.message,
+      toString: error?.toString?.(),
+      code: error?.code,
+      stack: error?.stack,
+      responseStatus: error?.response?.status,
+      responseData: error?.response?.data,
+    });
+    
+    // Extract error message
+    let errorMessage = 'AI chat failed';
+    
+    if (error?.response?.data?.error?.message) {
+      errorMessage = `AI chat failed: ${error.response.data.error.message}`;
+    } else if (error?.message) {
+      errorMessage = `AI chat failed: ${error.message}`;
+    } else if (error?.code === 'ECONNABORTED') {
+      errorMessage = 'AI chat failed: Request timeout. Please try again.';
+    } else if (error?.code === 'ENOTFOUND' || error?.code === 'ECONNREFUSED') {
+      errorMessage = 'AI chat failed: Could not connect to Gemini API. Please check your internet connection.';
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 

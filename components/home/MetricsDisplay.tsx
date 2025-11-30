@@ -19,16 +19,27 @@ interface MetricsDisplayProps {
 
 export default function MetricsDisplay({ position, metrics }: MetricsDisplayProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const basePositionRef = useRef<[number, number, number]>(position);
+
+  // Update base position if prop changes
+  if (basePositionRef.current[0] !== position[0] || 
+      basePositionRef.current[1] !== position[1] || 
+      basePositionRef.current[2] !== position[2]) {
+    basePositionRef.current = position;
+  }
 
   useFrame((state) => {
     if (groupRef.current) {
-      // Gentle floating animation
-      groupRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.3) * 0.05;
+      // Set base position
+      groupRef.current.position.set(...basePositionRef.current);
+      // Apply floating animation relative to base position
+      const floatOffset = Math.sin(state.clock.elapsedTime * 0.3) * 0.05;
+      groupRef.current.position.y += floatOffset;
     }
   });
 
   return (
-    <group ref={groupRef} position={position}>
+    <group ref={groupRef} position={basePositionRef.current}>
       {metrics.map((metric, index) => (
         <group key={index} position={[0, -index * 1.5, 0]}>
           {/* Background card */}
@@ -79,16 +90,15 @@ function AnimatedCounter({
   color: string;
 }) {
   const currentValue = useRef(0);
-  const hasStarted = useRef(false);
+  const animationSpeed = useRef(0.02); // Adjust speed based on target value
 
   useFrame(() => {
-    // Animate counter incrementing
-    if (!hasStarted.current) {
-      hasStarted.current = true;
-    }
+    // Animate counter from 0 to target value
     if (currentValue.current < targetValue) {
+      // Use percentage-based increment for smooth animation regardless of target value
+      const increment = Math.max(targetValue * animationSpeed.current, targetValue / 100);
       currentValue.current = Math.min(
-        currentValue.current + targetValue * 0.01,
+        currentValue.current + increment,
         targetValue
       );
     }
@@ -96,7 +106,7 @@ function AnimatedCounter({
 
   const displayValue = currentValue.current >= targetValue
     ? formatNumber(targetValue)
-    : formatNumber(currentValue.current);
+    : formatNumber(Math.max(0, currentValue.current));
 
   return (
     <group position={position}>

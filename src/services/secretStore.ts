@@ -8,26 +8,45 @@ import { encryptText, decryptText } from '../utils/crypto';
  * @param value - Plaintext API key or token to encrypt and store
  */
 export async function storeApiKey(userId: number, provider: string, value: string): Promise<void> {
+  console.log('[secretStore] storeApiKey called:', { userId, provider, valueLength: value?.length });
+  
   let encrypted: Buffer;
   let iv: Buffer;
   let authTag: Buffer;
   
-  // Encrypt the API key - catch encryption errors
+  // Step 1: Encrypt the API key
+  console.log('[secretStore] Step 1: Encrypting API key...');
   try {
     const encryptedData = encryptText(value);
     encrypted = encryptedData.encrypted;
     iv = encryptedData.iv;
     authTag = encryptedData.authTag;
+    console.log('[secretStore] Encryption successful:', { 
+      encryptedLength: encrypted.length, 
+      ivLength: iv.length, 
+      authTagLength: authTag.length 
+    });
   } catch (error: any) {
-    if (error.message?.includes('MASTER_KEY')) {
+    console.error('[secretStore] Encryption failed:');
+    console.error('[secretStore] Raw encryption error:', error);
+    console.error('[secretStore] Error type:', error?.constructor?.name);
+    console.error('[secretStore] Error message:', error?.message);
+    console.error('[secretStore] Error toString:', error?.toString?.());
+    
+    if (error?.message?.includes('MASTER_KEY') || error?.toString?.()?.includes('MASTER_KEY')) {
       throw new Error('MASTER_KEY environment variable is not set. Cannot encrypt API key.');
     }
-    throw new Error(`Failed to encrypt API key: ${error.message || 'Unknown encryption error'}`);
+    throw new Error(`Failed to encrypt API key: ${error?.message || error?.toString?.() || 'Unknown encryption error'}`);
   }
   
+  // Step 2: Connect to database
+  console.log('[secretStore] Step 2: Connecting to database...');
   const client = await pool.connect();
+  console.log('[secretStore] Database connection established');
   
   try {
+    // Step 3: Insert/update API key
+    console.log('[secretStore] Step 3: Executing database query...', { userId, provider });
     await client.query(
       `INSERT INTO api_keys (user_id, provider, encrypted_value, iv, auth_tag)
        VALUES ($1, $2, $3, $4, $5)
@@ -39,18 +58,29 @@ export async function storeApiKey(userId: number, provider: string, value: strin
          updated_at = CURRENT_TIMESTAMP`,
       [userId, provider, encrypted, iv, authTag]
     );
+    console.log('[secretStore] Database query executed successfully');
   } catch (error: any) {
+    console.error('[secretStore] Database query failed:');
+    console.error('[secretStore] Raw database error:', error);
+    console.error('[secretStore] Error type:', error?.constructor?.name);
+    console.error('[secretStore] Error code:', error?.code);
+    console.error('[secretStore] Error message:', error?.message);
+    console.error('[secretStore] Error detail:', error?.detail);
+    console.error('[secretStore] Error constraint:', error?.constraint);
+    console.error('[secretStore] Error toString:', error?.toString?.());
+    
     // Re-throw with more context
-    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+    if (error?.code === 'ECONNREFUSED' || error?.code === 'ENOTFOUND') {
       throw new Error('Database connection failed. Please check DATABASE_URL environment variable.');
-    } else if (error.code === '42P01') {
+    } else if (error?.code === '42P01') {
       throw new Error('Database table "api_keys" does not exist. Please run database migrations.');
-    } else if (error.code === '23503') {
+    } else if (error?.code === '23503') {
       throw new Error(`User with ID ${userId} does not exist in the database.`);
     }
     throw error;
   } finally {
     client.release();
+    console.log('[secretStore] Database connection released');
   }
 }
 

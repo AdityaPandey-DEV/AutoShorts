@@ -19,7 +19,6 @@ export default function FlowchartEditorPage() {
   const [variables, setVariables] = useState<FlowchartVariable[]>([]);
   const [comments, setComments] = useState<CommentBox[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const [flowchartName, setFlowchartName] = useState('My Automation Flowchart');
   const [saving, setSaving] = useState(false);
   const [flowchartId, setFlowchartId] = useState<number | null>(null);
@@ -143,7 +142,6 @@ export default function FlowchartEditorPage() {
 
   const handleNodeClick = (nodeId: string) => {
     setSelectedNodeId(nodeId || null);
-    setSelectedCommentId(null);
   };
 
   const handleNodePositionChange = (nodeId: string, position: [number, number]) => {
@@ -153,13 +151,20 @@ export default function FlowchartEditorPage() {
   };
 
   const handleAddNode = (type: string) => {
+    if (!type) {
+      // Empty string means open palette
+      setShowNodePalette(true);
+      return;
+    }
+
     const nodeType = getNodeType(type);
     if (!nodeType) return;
 
+    // Position new node at center (0, 0) which will be visible in the canvas center
     const newNode: BlueprintNode = {
       id: `node-${Date.now()}`,
       type,
-      position: [viewport.panX + 400, viewport.panY + 300],
+      position: [0, 0], // Center of canvas (world coordinates)
       label: nodeType.name,
       inputPins: nodeType.inputPins || [],
       outputPins: nodeType.outputPins || [],
@@ -198,10 +203,6 @@ export default function FlowchartEditorPage() {
     if (selectedNodeId) {
       handleDeleteNode(selectedNodeId);
     }
-    if (selectedCommentId) {
-      setComments(prev => prev.filter(c => c.id !== selectedCommentId));
-      setSelectedCommentId(null);
-    }
   };
 
   const handleClear = () => {
@@ -211,7 +212,6 @@ export default function FlowchartEditorPage() {
       setVariables([]);
       setComments([]);
       setSelectedNodeId(null);
-      setSelectedCommentId(null);
     }
   };
 
@@ -332,6 +332,8 @@ export default function FlowchartEditorPage() {
             onConnectionCreate={handleConnectionCreate}
             onConnectionDelete={handleConnectionDelete}
             snapToGridEnabled={true}
+            initialViewport={viewport}
+            onViewportChange={setViewport}
           />
         </div>
 

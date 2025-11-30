@@ -8,7 +8,7 @@ import BlueprintNodeComponent from './BlueprintNode';
 import BlueprintConnections from './BlueprintConnections';
 import { FlowchartNodeType, getNodeType } from './NodeTypes';
 import { screenToWorld, worldToScreen, bezierPath } from './utils/canvasUtils';
-import { validateConnection, canConnect } from './utils/typeCompatibility';
+import { validateConnection } from './utils/typeCompatibility';
 import { PinType } from '@/src/types/flowchart';
 
 interface BlueprintCanvasProps {
@@ -22,6 +22,8 @@ interface BlueprintCanvasProps {
   onConnectionDelete?: (connectionId: string) => void;
   snapToGridEnabled?: boolean;
   gridSize?: number;
+  initialViewport?: ViewportState;
+  onViewportChange?: (viewport: ViewportState) => void;
 }
 
 const DEFAULT_ZOOM = 1;
@@ -42,18 +44,33 @@ export default function BlueprintCanvas({
   onConnectionDelete,
   snapToGridEnabled = true,
   gridSize = DEFAULT_GRID_SIZE,
+  initialViewport,
+  onViewportChange,
 }: BlueprintCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [viewport, setViewport] = useState<ViewportState>({
-    zoom: DEFAULT_ZOOM,
-    panX: DEFAULT_PAN_X,
-    panY: DEFAULT_PAN_Y,
-  });
+  const [viewport, setViewport] = useState<ViewportState>(
+    initialViewport || {
+      zoom: DEFAULT_ZOOM,
+      panX: DEFAULT_PAN_X,
+      panY: DEFAULT_PAN_Y,
+    }
+  );
+  
+  // Update viewport when initialViewport changes (e.g., from saved flowchart)
+  useEffect(() => {
+    if (initialViewport) {
+      setViewport(initialViewport);
+    }
+  }, [initialViewport]);
+  
+  // Notify parent of viewport changes
+  useEffect(() => {
+    onViewportChange?.(viewport);
+  }, [viewport, onViewportChange]);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [hoveredPinId, setHoveredPinId] = useState<string | null>(null);
-  const [hoveredPinInfo, setHoveredPinInfo] = useState<{ nodeId: string; pinId: string; type: PinType; direction: 'input' | 'output' } | null>(null);
   const [connectingFrom, setConnectingFrom] = useState<{ nodeId: string; pinId: string; pinType: PinType; x: number; y: number } | null>(null);
   const [connectionPreview, setConnectionPreview] = useState<{ x: number; y: number } | null>(null);
   const [connectionValidation, setConnectionValidation] = useState<{ valid: boolean; message?: string; requiresAdapter?: boolean } | null>(null);
@@ -170,25 +187,6 @@ export default function BlueprintCanvas({
     }
   }, [nodes, connectingFrom, onConnectionCreate]);
   
-  // Handle pin hover for connection preview validation
-  const handlePinHover = useCallback((nodeId: string, pinId: string, direction: 'input' | 'output', type: PinType) => {
-    setHoveredPinInfo({ nodeId, pinId, type, direction });
-    
-    if (connectingFrom && direction === 'input') {
-      // Validate connection while hovering
-      const validation = validateConnection(connectingFrom.pinType, type, type === 'execution' ? 'execution' : 'data');
-      setConnectionValidation(validation);
-    } else {
-      setConnectionValidation(null);
-    }
-  }, [connectingFrom]);
-  
-  const handlePinLeave = useCallback(() => {
-    setHoveredPinInfo(null);
-    if (!connectingFrom) {
-      setConnectionValidation(null);
-    }
-  }, [connectingFrom]);
 
   // Handle keyboard shortcuts
   useEffect(() => {

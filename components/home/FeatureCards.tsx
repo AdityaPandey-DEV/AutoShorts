@@ -45,25 +45,33 @@ export default function FeatureCards() {
         return (
           <div
             key={index}
-            className="group bg-white rounded-xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-100"
+            className="group relative bg-white rounded-xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 overflow-hidden"
           >
+            {/* Background gradient on hover */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+            
             {/* Icon Container */}
-            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-xl ${feature.bgColor} mb-4 group-hover:scale-110 transition-transform duration-300`}>
-              <Icon className={`w-8 h-8 ${feature.iconColor}`} strokeWidth={2.5} />
+            <div className={`relative inline-flex items-center justify-center w-16 h-16 rounded-xl ${feature.bgColor} mb-4 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300`}>
+              <Icon className={`w-8 h-8 ${feature.iconColor} relative z-10`} strokeWidth={2.5} />
+              {/* Glow effect on hover */}
+              <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300`} />
             </div>
             
             {/* Title */}
-            <h3 className="text-xl font-bold text-black mb-3 group-hover:text-red-600 transition-colors duration-300">
+            <h3 className="relative text-xl font-bold text-black mb-3 group-hover:text-red-600 transition-colors duration-300">
               {feature.title}
             </h3>
             
             {/* Description */}
-            <p className="text-gray-600 leading-relaxed">
+            <p className="relative text-gray-600 leading-relaxed mb-4">
               {feature.description}
             </p>
             
             {/* Decorative gradient line */}
-            <div className={`mt-4 h-1 w-0 bg-gradient-to-r ${feature.gradient} group-hover:w-full transition-all duration-300 rounded-full`} />
+            <div className={`relative mt-auto h-1 w-0 bg-gradient-to-r ${feature.gradient} group-hover:w-full transition-all duration-300 rounded-full`} />
+            
+            {/* Shine effect */}
+            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           </div>
         );
       })}

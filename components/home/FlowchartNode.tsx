@@ -24,17 +24,30 @@ export default function FlowchartNode({
   ...props
 }: FlowchartNodeProps) {
   const meshRef = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const basePositionRef = useRef<[number, number, number]>(position);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
 
-  useFrame((state, delta) => {
-    if (meshRef.current) {
-      // Gentle floating animation
-      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+  // Update base position if prop changes
+  if (basePositionRef.current[0] !== position[0] || 
+      basePositionRef.current[1] !== position[1] || 
+      basePositionRef.current[2] !== position[2]) {
+    basePositionRef.current = position;
+  }
+
+  useFrame((state) => {
+    if (groupRef.current && meshRef.current) {
+      // Set group position to the base position (this should be static)
+      groupRef.current.position.set(...basePositionRef.current);
       
-      // Hover scale animation
+      // Apply floating animation only to the mesh within the group
+      const floatOffset = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+      meshRef.current.position.y = floatOffset;
+      
+      // Hover scale animation - scale from center
       if (hovered || clicked) {
-        meshRef.current.scale.lerp(new THREE.Vector3(1.2, 1.2, 1.2), 0.1);
+        meshRef.current.scale.lerp(new THREE.Vector3(1.15, 1.15, 1.15), 0.1);
       } else {
         meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
       }
@@ -47,7 +60,7 @@ export default function FlowchartNode({
   };
 
   return (
-    <group position={position}>
+    <group ref={groupRef} position={basePositionRef.current}>
       <mesh
         ref={meshRef}
         onClick={handleClick}

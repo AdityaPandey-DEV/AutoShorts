@@ -2,30 +2,20 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import BlueprintCanvas from '@/components/flowchart/BlueprintCanvas';
-import NodePalette from '@/components/flowchart/NodePalette';
-import NodePropertiesPanel from '@/components/flowchart/NodePropertiesPanel';
-import VariablesPanel from '@/components/flowchart/VariablesPanel';
-import FlowchartToolbar from '@/components/flowchart/FlowchartToolbar';
+import FlowchartCanvas, { FlowchartNode, FlowchartConnection } from '@/components/flowchart/FlowchartCanvas';
 import AIChatAssistant from '@/components/flowchart/AIChatAssistant';
-import { BlueprintNode, BlueprintConnection, BlueprintFlowchartData, FlowchartVariable, CommentBox, ViewportState } from '@/src/types/flowchart';
+import FlowchartToolbar from '@/components/flowchart/FlowchartToolbar';
 import { getNodeType } from '@/components/flowchart/NodeTypes';
-import { convertLegacyToBlueprint } from '@/components/flowchart/utils/convertLegacy';
 
 export default function FlowchartEditorPage() {
   const searchParams = useSearchParams();
-  const [nodes, setNodes] = useState<BlueprintNode[]>([]);
-  const [connections, setConnections] = useState<BlueprintConnection[]>([]);
-  const [variables, setVariables] = useState<FlowchartVariable[]>([]);
-  const [comments, setComments] = useState<CommentBox[]>([]);
+  const [nodes, setNodes] = useState<FlowchartNode[]>([]);
+  const [connections, setConnections] = useState<FlowchartConnection[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const [flowchartName, setFlowchartName] = useState('My Automation Flowchart');
   const [saving, setSaving] = useState(false);
   const [flowchartId, setFlowchartId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showNodePalette, setShowNodePalette] = useState(false);
-  const [viewport, setViewport] = useState<ViewportState>({ zoom: 1, panX: 0, panY: 0 });
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Load flowchart if ID provided
@@ -51,7 +41,7 @@ export default function FlowchartEditorPage() {
         clearTimeout(autoSaveTimer.current);
       }
     };
-  }, [nodes, connections, flowchartName, variables, comments]);
+  }, [nodes, connections, flowchartName]);
 
   const loadFlowchart = async (id: number) => {
     setLoading(true);
@@ -63,33 +53,8 @@ export default function FlowchartEditorPage() {
         setFlowchartId(data.flowchart.id);
         setFlowchartName(data.flowchart.name);
         
-        const flowchartData = data.flowchart.flowchartData;
-        
-        // Check if it's legacy format or new format
-        if (flowchartData.nodes && flowchartData.nodes.length > 0) {
-          const firstNode = flowchartData.nodes[0];
-          
-          // Check if legacy format (has 3D position array)
-          if (Array.isArray(firstNode.position) && firstNode.position.length === 3) {
-            // Convert legacy format
-            const converted = convertLegacyToBlueprint(
-              flowchartData.nodes,
-              flowchartData.connections || []
-            );
-            setNodes(converted.nodes);
-            setConnections(converted.connections);
-            setVariables(converted.variables || []);
-            setComments(converted.comments || []);
-            if (converted.viewport) setViewport(converted.viewport);
-          } else {
-            // New format
-            setNodes(flowchartData.nodes || []);
-            setConnections(flowchartData.connections || []);
-            setVariables(flowchartData.variables || []);
-            setComments(flowchartData.comments || []);
-            if (flowchartData.viewport) setViewport(flowchartData.viewport);
-          }
-        }
+        setNodes(data.flowchart.flowchartData.nodes || []);
+        setConnections(data.flowchart.flowchartData.connections || []);
       }
     } catch (error) {
       console.error('Error loading flowchart:', error);
@@ -102,12 +67,9 @@ export default function FlowchartEditorPage() {
   const handleSave = async (showMessage = true) => {
     setSaving(true);
     try {
-      const flowchartData: BlueprintFlowchartData = {
+      const flowchartData = {
         nodes,
         connections,
-        variables,
-        comments,
-        viewport,
       };
 
       const url = flowchartId ? `/api/flowchart/${flowchartId}` : '/api/flowchart';
@@ -143,10 +105,9 @@ export default function FlowchartEditorPage() {
 
   const handleNodeClick = (nodeId: string) => {
     setSelectedNodeId(nodeId || null);
-    setSelectedCommentId(null);
   };
 
-  const handleNodePositionChange = (nodeId: string, position: [number, number]) => {
+  const handleNodePositionChange = (nodeId: string, position: [number, number, number]) => {
     setNodes(prev => prev.map(node =>
       node.id === nodeId ? { ...node, position } : node
     ));
@@ -156,51 +117,27 @@ export default function FlowchartEditorPage() {
     const nodeType = getNodeType(type);
     if (!nodeType) return;
 
-    const newNode: BlueprintNode = {
+    const newNode: FlowchartNode = {
       id: `node-${Date.now()}`,
       type,
-      position: [viewport.panX + 400, viewport.panY + 300],
+      position: [Math.random() * 4 - 2, 0, Math.random() * 4 - 2],
       label: nodeType.name,
-      inputPins: nodeType.inputPins || [],
-      outputPins: nodeType.outputPins || [],
     };
 
     setNodes(prev => [...prev, newNode]);
-    setShowNodePalette(false);
   };
 
   const handleDeleteNode = (nodeId: string) => {
     setNodes(prev => prev.filter(n => n.id !== nodeId));
-    setConnections(prev => prev.filter(c => c.fromNodeId !== nodeId && c.toNodeId !== nodeId));
+    setConnections(prev => prev.filter(c => c.from !== nodeId && c.to !== nodeId));
     if (selectedNodeId === nodeId) {
       setSelectedNodeId(null);
     }
   };
 
-  const handleConnectionCreate = (fromNodeId: string, fromPinId: string, toNodeId: string, toPinId: string) => {
-    const newConnection: BlueprintConnection = {
-      id: `conn-${Date.now()}`,
-      fromNodeId,
-      fromPinId,
-      toNodeId,
-      toPinId,
-      type: 'execution', // TODO: Determine from pin types
-    };
-
-    setConnections(prev => [...prev, newConnection]);
-  };
-
-  const handleConnectionDelete = (connectionId: string) => {
-    setConnections(prev => prev.filter(c => c.id !== connectionId));
-  };
-
   const handleDeleteSelected = () => {
     if (selectedNodeId) {
       handleDeleteNode(selectedNodeId);
-    }
-    if (selectedCommentId) {
-      setComments(prev => prev.filter(c => c.id !== selectedCommentId));
-      setSelectedCommentId(null);
     }
   };
 
@@ -209,19 +146,16 @@ export default function FlowchartEditorPage() {
       setNodes([]);
       setConnections([]);
       setSelectedNodeId(null);
-      setSelectedCommentId(null);
     }
   };
 
   const handleExport = () => {
-    const data: BlueprintFlowchartData = {
+    const data = {
+      name: flowchartName,
       nodes,
       connections,
-      variables,
-      comments,
-      viewport,
     };
-    const blob = new Blob([JSON.stringify({ name: flowchartName, ...data }, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -233,28 +167,7 @@ export default function FlowchartEditorPage() {
   const handleImport = (data: any) => {
     if (data.nodes) setNodes(data.nodes);
     if (data.connections) setConnections(data.connections);
-    if (data.variables) setVariables(data.variables);
-    if (data.comments) setComments(data.comments);
-    if (data.viewport) setViewport(data.viewport);
     if (data.name) setFlowchartName(data.name);
-  };
-
-  const handleNodeUpdate = (nodeId: string, updates: Partial<BlueprintNode>) => {
-    setNodes(prev => prev.map(node =>
-      node.id === nodeId ? { ...node, ...updates } : node
-    ));
-  };
-
-  const handleVariableAdd = (variable: Omit<FlowchartVariable, 'id'>) => {
-    setVariables(prev => [...prev, { ...variable, id: `var-${Date.now()}` }]);
-  };
-
-  const handleVariableUpdate = (id: string, updates: Partial<FlowchartVariable>) => {
-    setVariables(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
-  };
-
-  const handleVariableDelete = (id: string) => {
-    setVariables(prev => prev.filter(v => v.id !== id));
   };
 
   const handleApplySuggestion = (suggestion: any) => {
@@ -263,8 +176,19 @@ export default function FlowchartEditorPage() {
     }
   };
 
-  const selectedNode = nodes.find(n => n.id === selectedNodeId);
-  const selectedNodeType = selectedNode ? getNodeType(selectedNode.type) : null;
+  // Update connection positions when nodes move
+  const connectionsWithPositions: FlowchartConnection[] = connections.map(conn => {
+    const fromNode = nodes.find(n => n.id === conn.from);
+    const toNode = nodes.find(n => n.id === conn.to);
+    return {
+      ...conn,
+      fromPosition: fromNode?.position || [0, 0, 0],
+      toPosition: toNode?.position || [0, 0, 0],
+    };
+  }).filter(conn => {
+    // Only show connections where both nodes exist
+    return nodes.some(n => n.id === conn.from) && nodes.some(n => n.id === conn.to);
+  });
 
   if (loading) {
     return (
@@ -277,14 +201,14 @@ export default function FlowchartEditorPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#1a1a1a]">
+    <div className="h-[calc(100vh-64px)] flex flex-col">
       {/* Header */}
-      <div className="bg-[#2a2a2a] border-b border-gray-600 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
         <input
           type="text"
           value={flowchartName}
           onChange={(e) => setFlowchartName(e.target.value)}
-          className="text-2xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full placeholder-gray-500"
+          className="text-2xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 text-black w-full"
           placeholder="Flowchart Name"
         />
       </div>
@@ -292,7 +216,7 @@ export default function FlowchartEditorPage() {
       {/* Toolbar */}
       <FlowchartToolbar
         onSave={() => handleSave(true)}
-        onAddNode={() => setShowNodePalette(true)}
+        onAddNode={handleAddNode}
         onDeleteSelected={handleDeleteSelected}
         onClear={handleClear}
         onExport={handleExport}
@@ -303,77 +227,27 @@ export default function FlowchartEditorPage() {
 
       {/* Editor Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Node Palette (collapsible) */}
-        <div className="w-64 border-r border-gray-600 bg-[#2a2a2a] flex flex-col">
-          <div className="p-4 border-b border-gray-600">
-            <h3 className="text-lg font-semibold text-white">Variables</h3>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <VariablesPanel
-              variables={variables}
-              onAdd={handleVariableAdd}
-              onUpdate={handleVariableUpdate}
-              onDelete={handleVariableDelete}
-            />
-          </div>
-        </div>
-
         {/* Canvas */}
-        <div className="flex-1 relative">
-          <BlueprintCanvas
+        <div className="flex-1">
+          <FlowchartCanvas
             nodes={nodes}
-            connections={connections}
+            connections={connectionsWithPositions}
             selectedNodeId={selectedNodeId}
             onNodeClick={handleNodeClick}
             onNodePositionChange={handleNodePositionChange}
             onNodeDelete={handleDeleteNode}
-            onConnectionCreate={handleConnectionCreate}
-            onConnectionDelete={handleConnectionDelete}
-            snapToGridEnabled={true}
+            onAddNode={handleAddNode}
           />
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-80 border-l border-gray-600 bg-[#2a2a2a] flex flex-col">
-          <div className="flex border-b border-gray-600">
-            <button className="flex-1 px-4 py-2 text-white bg-[#1a1a1a] border-b-2 border-blue-500">
-              Properties
-            </button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <NodePropertiesPanel
-              node={selectedNode || null}
-              nodeType={selectedNodeType}
-              onUpdate={handleNodeUpdate}
-            />
-          </div>
-        </div>
-
-        {/* AI Chat - Bottom Right Overlay */}
-        <div className="absolute bottom-4 right-[340px] w-80 h-96 border border-gray-600 rounded-lg bg-[#2a2a2a] shadow-xl flex flex-col z-10">
+        {/* AI Chat */}
+        <div className="w-96 border-l border-gray-200">
           <AIChatAssistant
-            currentFlowchart={{
-              nodes: nodes.map(node => ({
-                id: node.id,
-                type: node.type,
-                label: node.label,
-                position: [node.position[0], 0, node.position[1]] as [number, number, number],
-              })),
-              connections: connections.map(c => ({ from: c.fromNodeId, to: c.toNodeId })),
-            }}
+            currentFlowchart={{ nodes, connections }}
             onApplySuggestion={handleApplySuggestion}
           />
         </div>
       </div>
-
-      {/* Node Palette Modal */}
-      {showNodePalette && (
-        <NodePalette
-          isOpen={showNodePalette}
-          onClose={() => setShowNodePalette(false)}
-          onSelectNode={handleAddNode}
-        />
-      )}
     </div>
   );
 }

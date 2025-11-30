@@ -14,8 +14,15 @@ export interface SubscriptionPlan {
   priceMonthly: number;
   priceYearly: number;
   maxVideosPerMonth: number | null; // null means unlimited
+  maxVideosPerDay?: number | null; // Daily limit (for trial users)
   features: PlanFeatures;
 }
+
+// Trial configuration
+export const TRIAL_CONFIG = {
+  maxVideosPerDay: 5,
+  durationDays: 7,
+};
 
 export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   starter: {

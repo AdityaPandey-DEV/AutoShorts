@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from './auth';
-import { getUserPlan } from '@/src/services/subscription';
+import { getUserPlan, checkTrialStatus } from '@/src/services/subscription';
 import { checkCanGenerate } from '@/src/services/usage';
-import { getPlan } from '@/src/config/plans';
+import { getPlan, TRIAL_CONFIG } from '@/src/config/plans';
 import { hasActiveSubscription } from '@/src/services/subscription';
 
 /**
@@ -29,17 +29,29 @@ export async function checkVideoLimit(request: NextRequest) {
       };
     }
 
-    // If no plan details (shouldn't happen), default to trial/starter limits
-    const maxVideos = planDetails?.maxVideosPerMonth || 10;
+    // Check if user is on trial
+    const isTrial = await checkTrialStatus(user.id);
+    
+    // For trial users, use daily limit; for paid users, use monthly limit
+    let maxVideos: number | null;
+    let maxVideosPerDay: number | undefined;
+    
+    if (isTrial) {
+      maxVideosPerDay = TRIAL_CONFIG.maxVideosPerDay;
+      maxVideos = null; // Not used for trial users
+    } else {
+      maxVideos = planDetails?.maxVideosPerMonth || 10;
+      maxVideosPerDay = undefined;
+    }
 
-    // Check usage limits
-    const canGenerate = await checkCanGenerate(user.id, maxVideos);
+    // Check usage limits (passes trial status and daily limit)
+    const canGenerate = await checkCanGenerate(user.id, maxVideos, isTrial, maxVideosPerDay);
 
     if (!canGenerate.canGenerate) {
       return {
         error: NextResponse.json({
           error: 'Usage limit reached',
-          message: canGenerate.reason || 'Monthly video limit reached',
+          message: canGenerate.reason || (isTrial ? 'Daily video limit reached' : 'Monthly video limit reached'),
           currentUsage: canGenerate.currentUsage,
           limit: canGenerate.limit,
         }, { status: 403 }),
@@ -55,6 +67,7 @@ export async function checkVideoLimit(request: NextRequest) {
         currentUsage: canGenerate.currentUsage,
         limit: canGenerate.limit,
         plan: userPlan.plan,
+        isTrial,
       },
     };
   } catch (error: any) {

@@ -1,7 +1,9 @@
 import { getAllPlans, Plan } from '@/src/services/plans';
 import PublicHeader from '@/components/layout/PublicHeader';
+import Header from '@/components/layout/Header';
 import PublicPricingCard from '@/components/pricing/PublicPricingCard';
 import { logger } from '@/src/utils/logger';
+import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,6 +16,9 @@ export const metadata = {
 export default async function PricingPage() {
   let plans: Plan[] = [];
   let hasError = false;
+
+  // Check if user is authenticated to show appropriate header
+  const user = await getAuthUser();
 
   try {
     plans = await getAllPlans(false); // Only active plans
@@ -29,7 +34,7 @@ export default async function PricingPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <PublicHeader />
+      {user ? <Header /> : <PublicHeader />}
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">

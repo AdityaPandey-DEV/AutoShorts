@@ -8,12 +8,13 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdmin();
 
-    const jobId = parseInt(params.id, 10);
+    const { id } = await params;
+    const jobId = parseInt(id, 10);
     if (isNaN(jobId)) {
       return NextResponse.json(
         { error: 'Invalid job ID' },
@@ -74,12 +75,13 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdmin();
 
-    const jobId = parseInt(params.id, 10);
+    const { id } = await params;
+    const jobId = parseInt(id, 10);
     if (isNaN(jobId)) {
       return NextResponse.json(
         { error: 'Invalid job ID' },

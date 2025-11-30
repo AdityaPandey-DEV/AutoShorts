@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { page?: string; limit?: string; search?: string; subscription_status?: string };
+  searchParams: Promise<{ page?: string; limit?: string; search?: string; subscription_status?: string }>;
 }) {
   const user = await getAuthUser();
 
@@ -16,14 +16,15 @@ export default async function AdminUsersPage({
     redirect('/dashboard');
   }
 
-  const page = parseInt(searchParams.page || '1', 10);
-  const limit = parseInt(searchParams.limit || '20', 10);
+  const params = await searchParams;
+  const page = parseInt(params.page || '1', 10);
+  const limit = parseInt(params.limit || '20', 10);
 
   const result = await getAllUsers({
     page,
     limit,
-    search: searchParams.search,
-    subscriptionStatus: searchParams.subscription_status,
+    search: params.search,
+    subscriptionStatus: params.subscription_status,
   });
 
   return (

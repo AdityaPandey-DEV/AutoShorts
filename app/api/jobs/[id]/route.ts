@@ -8,11 +8,12 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth();
-    const jobId = parseInt(params.id, 10);
+    const { id } = await params;
+    const jobId = parseInt(id, 10);
 
     if (isNaN(jobId)) {
       return NextResponse.json(

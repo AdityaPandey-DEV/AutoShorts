@@ -8,11 +8,11 @@ export const runtime = 'nodejs';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { provider: string } }
+  { params }: { params: Promise<{ provider: string }> }
 ) {
   try {
     const user = await requireAuth();
-    const { provider } = params;
+    const { provider } = await params;
 
     if (!provider) {
       return NextResponse.json(

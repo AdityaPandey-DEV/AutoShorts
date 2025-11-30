@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function AdminJobsPage({
   searchParams,
 }: {
-  searchParams: { page?: string; limit?: string; status?: string };
+  searchParams: Promise<{ page?: string; limit?: string; status?: string }>;
 }) {
   const user = await getAuthUser();
 
@@ -16,13 +16,14 @@ export default async function AdminJobsPage({
     redirect('/dashboard');
   }
 
-  const page = parseInt(searchParams.page || '1', 10);
-  const limit = parseInt(searchParams.limit || '20', 10);
+  const params = await searchParams;
+  const page = parseInt(params.page || '1', 10);
+  const limit = parseInt(params.limit || '20', 10);
 
   const result = await getAllJobs({
     page,
     limit,
-    status: searchParams.status,
+    status: params.status,
   });
 
   return (

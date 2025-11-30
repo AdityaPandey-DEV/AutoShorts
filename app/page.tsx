@@ -1,26 +1,13 @@
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import type { Metadata } from 'next';
 import PublicHeader from '@/components/layout/PublicHeader';
+import FlowchartWrapper from '@/components/home/FlowchartWrapper';
 
 export const metadata: Metadata = {
   title: 'AutoShorts - Automated YouTube Shorts Generation',
   description: 'Create and upload YouTube Shorts automatically with AI. Turn your content into viral shorts with our automated system.',
   keywords: ['YouTube Shorts', 'automation', 'AI video generation', 'content creation'],
 };
-
-// Dynamically import the flowchart to avoid SSR issues with Three.js
-const AutomationFlowchart = dynamic(
-  () => import('@/components/home/AutomationFlowchart'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-[600px] bg-black rounded-lg flex items-center justify-center">
-        <div className="text-white text-lg">Loading 3D visualization...</div>
-      </div>
-    )
-  }
-);
 
 export default function Home() {
   return (
@@ -80,7 +67,7 @@ export default function Home() {
           
           {/* 3D Flowchart */}
           <div className="mb-16">
-            <AutomationFlowchart />
+            <FlowchartWrapper />
           </div>
 
           {/* Feature Cards */}

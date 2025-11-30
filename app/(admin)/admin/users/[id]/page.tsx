@@ -11,8 +11,8 @@ export default async function UserDetailPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { edit?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string }>;
 }) {
   const user = await getAuthUser();
 
@@ -20,7 +20,10 @@ export default async function UserDetailPage({
     redirect('/dashboard');
   }
 
-  const userId = parseInt(params.id, 10);
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  
+  const userId = parseInt(resolvedParams.id, 10);
   if (isNaN(userId)) {
     notFound();
   }
@@ -43,7 +46,7 @@ export default async function UserDetailPage({
     client.release();
   }
 
-  const isEditMode = searchParams.edit === 'true';
+  const isEditMode = resolvedSearchParams.edit === 'true';
 
   return (
     <div>

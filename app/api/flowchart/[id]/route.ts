@@ -8,11 +8,12 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth();
-    const flowchartId = parseInt(params.id, 10);
+    const { id } = await params;
+    const flowchartId = parseInt(id, 10);
     
     if (isNaN(flowchartId)) {
       return NextResponse.json(
@@ -49,11 +50,12 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth();
-    const flowchartId = parseInt(params.id, 10);
+    const { id } = await params;
+    const flowchartId = parseInt(id, 10);
     
     if (isNaN(flowchartId)) {
       return NextResponse.json(
@@ -99,11 +101,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth();
-    const flowchartId = parseInt(params.id, 10);
+    const { id } = await params;
+    const flowchartId = parseInt(id, 10);
     
     if (isNaN(flowchartId)) {
       return NextResponse.json(

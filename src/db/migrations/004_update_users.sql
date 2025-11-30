@@ -41,3 +41,6 @@ UPDATE users
 SET subscription_status = 'trial'
 WHERE subscription_status IS NULL;
 
+
+
+

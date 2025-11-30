@@ -429,3 +429,6 @@ FLOWCHART  PRICING   SETTINGS       ADMIN (/admin)
 - API routes are protected separately with authentication checks
 - Static pages are pre-rendered where possible for performance
 
+
+
+

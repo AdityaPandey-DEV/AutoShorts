@@ -26,3 +26,6 @@ RUN mkdir -p /tmp/autoshorts
 # Start the worker
 CMD ["node", "dist/worker/worker.js"]
 
+
+
+

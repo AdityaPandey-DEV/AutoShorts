@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import PublicHeader from '@/components/layout/PublicHeader';
 import FlowchartWrapper from '@/components/home/FlowchartWrapper';
+import FeatureCards from '@/components/home/FeatureCards';
 
 export const metadata: Metadata = {
   title: 'AutoShorts - Automated YouTube Shorts Generation',
@@ -71,36 +72,7 @@ export default function Home() {
           </div>
 
           {/* Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
-            <div className="bg-white rounded-lg p-6 shadow-lg">
-              <div className="text-4xl mb-4">🧠</div>
-              <h3 className="text-xl font-bold text-black mb-2">AI Thinking</h3>
-              <p className="text-gray-600">
-                Advanced AI analyzes trends and generates engaging story concepts that resonate with your audience.
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-lg">
-              <div className="text-4xl mb-4">🎬</div>
-              <h3 className="text-xl font-bold text-black mb-2">Video Creator</h3>
-              <p className="text-gray-600">
-                Automatically creates professional videos with narration, visuals, and optimized formatting.
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-lg">
-              <div className="text-4xl mb-4">📺</div>
-              <h3 className="text-xl font-bold text-black mb-2">Auto Upload</h3>
-              <p className="text-gray-600">
-                Seamlessly uploads to YouTube with SEO-optimized titles and descriptions.
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-lg">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-xl font-bold text-black mb-2">Smart Learning</h3>
-              <p className="text-gray-600">
-                Learns from feedback, comments, and analytics to continuously improve your content.
-              </p>
-            </div>
-          </div>
+          <FeatureCards />
         </div>
       </section>
 

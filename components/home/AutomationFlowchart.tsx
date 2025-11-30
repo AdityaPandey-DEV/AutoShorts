@@ -165,6 +165,8 @@ export default function AutomationFlowchart() {
             description: selectedNode.description,
             features: selectedNode.features,
             icon: selectedNode.icon,
+            iconType: selectedNode.id,
+            color: selectedNode.color,
           } : null}
           onClose={() => setSelectedNode(null)}
         />
@@ -230,6 +232,8 @@ export default function AutomationFlowchart() {
           description: selectedNode.description,
           features: selectedNode.features,
           icon: selectedNode.icon,
+          iconType: selectedNode.id,
+          color: selectedNode.color,
         } : null}
         onClose={() => setSelectedNode(null)}
       />

@@ -1,6 +1,5 @@
 // Utility to convert legacy 3D flowchart format to new Blueprint 2D format
-import { FlowchartNode as LegacyNode, FlowchartConnection as LegacyConnection } from '../FlowchartCanvas';
-import { BlueprintNode, BlueprintConnection, BlueprintFlowchartData } from '@/src/types/flowchart';
+import { FlowchartNode as LegacyNode, FlowchartConnection as LegacyConnection, BlueprintNode, BlueprintConnection, BlueprintFlowchartData } from '@/src/types/flowchart';
 import { getNodeType } from '../NodeTypes';
 
 export function convertLegacyToBlueprint(
@@ -21,11 +20,8 @@ export function convertLegacyToBlueprint(
     };
   });
 
-  // Convert connections
+  // Convert connections - legacy format uses 'from' and 'to' instead of node IDs
   const blueprintConnections: BlueprintConnection[] = connections.map((conn, index) => {
-    const fromNode = nodes.find(n => n.id === conn.from);
-    const toNode = nodes.find(n => n.id === conn.to);
-
     // For legacy connections without pins, create default connections
     return {
       id: conn.id || `conn-${index}`,

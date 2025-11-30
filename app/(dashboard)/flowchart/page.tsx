@@ -8,9 +8,11 @@ import NodePalette from '@/components/flowchart/NodePalette';
 import NodePropertiesPanel from '@/components/flowchart/NodePropertiesPanel';
 import VariablesPanel from '@/components/flowchart/VariablesPanel';
 import MobileMergedPanel from '@/components/flowchart/MobileMergedPanel';
-import FlowchartHeader from '@/components/flowchart/FlowchartHeader';
+import FlowchartToolbar from '@/components/flowchart/FlowchartToolbar';
+import Link from 'next/link';
 import AIChatAssistant from '@/components/flowchart/AIChatAssistant';
 import { BlueprintNode, BlueprintConnection, BlueprintFlowchartData, FlowchartVariable, CommentBox, ViewportState } from '@/src/types/flowchart';
+import { screenToWorld } from '@/components/flowchart/utils/canvasUtils';
 import { getNodeType } from '@/components/flowchart/NodeTypes';
 import { convertLegacyToBlueprint } from '@/components/flowchart/utils/convertLegacy';
 
@@ -227,15 +229,20 @@ export default function FlowchartEditorPage() {
     }
 
     // Position new node at the visible center of the canvas
-    // The visible center in world coordinates is [viewport.panX, viewport.panY]
-    // This is because screen center (canvasWidth/2, canvasHeight/2) maps to world position (panX, panY)
-    // when using the worldToScreen conversion: screenX = (worldX - panX) * zoom + canvasWidth/2
-    // For screen center: canvasWidth/2 = (worldX - panX) * zoom + canvasWidth/2
-    // Therefore: worldX = panX (and similarly worldY = panY)
+    // Use screenToWorld to convert screen center to world coordinates
+    // This accounts for zoom, pan, and canvas size correctly
+    // Formula: worldX = (screenX - canvasWidth/2) / zoom + panX
+    // For screen center: worldX = (canvasWidth/2 - canvasWidth/2) / zoom + panX = panX
+    // So [panX, panY] should be correct, but let's use screenToWorld to be safe
+    // Use a reasonable default canvas size (actual size will be close)
+    const defaultCanvasSize = { width: 1200, height: 800 }; // More realistic default
+    const screenCenter = { x: defaultCanvasSize.width / 2, y: defaultCanvasSize.height / 2 };
+    const worldCenter = screenToWorld(screenCenter, viewport, defaultCanvasSize);
+    
     const newNode: BlueprintNode = {
       id: `node-${Date.now()}`,
       type,
-      position: [viewport.panX, viewport.panY], // Visible center of current viewport
+      position: [worldCenter.x, worldCenter.y], // Visible center calculated from screen center
       label: nodeType.name,
       inputPins: nodeType.inputPins ? [...nodeType.inputPins] : [],
       outputPins: nodeType.outputPins ? [...nodeType.outputPins] : [],
@@ -353,10 +360,27 @@ export default function FlowchartEditorPage() {
 
   return (
     <div className="h-screen flex flex-col bg-[#1a1a1a] overflow-hidden">
-      {/* Merged Header (includes navigation and toolbar) */}
-      <FlowchartHeader
-        flowchartName={flowchartName}
-        onFlowchartNameChange={setFlowchartName}
+      {/* Header */}
+      <div className="bg-[#2a2a2a] border-b border-gray-600 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <input
+            type="text"
+            value={flowchartName}
+            onChange={(e) => setFlowchartName(e.target.value)}
+            className="text-2xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full placeholder-gray-500"
+            placeholder="Flowchart Name"
+          />
+          <Link
+            href="/dashboard"
+            className="ml-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex-shrink-0"
+          >
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <FlowchartToolbar
         onSave={() => handleSave(true)}
         onAddNode={() => setShowNodePalette(true)}
         onDeleteSelected={handleDeleteSelected}

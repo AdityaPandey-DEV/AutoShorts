@@ -289,6 +289,17 @@ export default function BlueprintCanvas({
             canvasSize
           );
 
+          // Only render if node is within viewport bounds (with some margin)
+          const margin = 500; // Extra margin to ensure nodes are visible
+          if (
+            screenPos.x < -margin ||
+            screenPos.x > canvasSize.width + margin ||
+            screenPos.y < -margin ||
+            screenPos.y > canvasSize.height + margin
+          ) {
+            return null; // Don't render nodes outside viewport
+          }
+
           return (
             <div
               key={node.id}
@@ -297,6 +308,7 @@ export default function BlueprintCanvas({
                 left: screenPos.x,
                 top: screenPos.y,
                 transform: 'translate(-50%, -50%)',
+                zIndex: selectedNodeId === node.id ? 10 : 1,
               }}
             >
               <BlueprintNodeComponent

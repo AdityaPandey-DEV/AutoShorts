@@ -158,16 +158,20 @@ export default function FlowchartEditorPage() {
     }
 
     const nodeType = getNodeType(type);
-    if (!nodeType) return;
+    if (!nodeType) {
+      console.error('Node type not found:', type);
+      return;
+    }
 
-    // Position new node at center (0, 0) which will be visible in the canvas center
+    // Position new node at origin [0, 0] which maps to canvas center
+    // Canvas center is always visible regardless of pan/zoom
     const newNode: BlueprintNode = {
       id: `node-${Date.now()}`,
       type,
-      position: [0, 0], // Center of canvas (world coordinates)
+      position: [0, 0], // Canvas center in world coordinates
       label: nodeType.name,
-      inputPins: nodeType.inputPins || [],
-      outputPins: nodeType.outputPins || [],
+      inputPins: nodeType.inputPins ? [...nodeType.inputPins] : [],
+      outputPins: nodeType.outputPins ? [...nodeType.outputPins] : [],
     };
 
     setNodes(prev => [...prev, newNode]);

@@ -7,6 +7,7 @@ import FlowchartCanvas, { FlowchartNode, FlowchartConnection } from '@/component
 import NodePalette from '@/components/flowchart/NodePalette';
 import NodePropertiesPanel from '@/components/flowchart/NodePropertiesPanel';
 import VariablesPanel from '@/components/flowchart/VariablesPanel';
+import MobileMergedPanel from '@/components/flowchart/MobileMergedPanel';
 import FlowchartToolbar from '@/components/flowchart/FlowchartToolbar';
 import AIChatAssistant from '@/components/flowchart/AIChatAssistant';
 import { BlueprintNode, BlueprintConnection, BlueprintFlowchartData, FlowchartVariable, CommentBox, ViewportState } from '@/src/types/flowchart';
@@ -28,7 +29,20 @@ export default function FlowchartEditorPage() {
   const [viewport, setViewport] = useState<ViewportState>({ zoom: 1, panX: 0, panY: 0 });
   const [rightSidebarTab, setRightSidebarTab] = useState<'properties' | 'ai'>('properties');
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'variables' | 'properties' | 'ai'>('variables');
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Detect mobile vs desktop
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Convert BlueprintNode (2D) to FlowchartNode (3D)
   const convertTo3D = (node: BlueprintNode): FlowchartNode => ({
@@ -362,94 +376,154 @@ export default function FlowchartEditorPage() {
       />
 
       {/* Editor Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Variables */}
-        <div className="w-64 border-r border-gray-600 bg-[#2a2a2a] flex flex-col">
-          <VariablesPanel
-            variables={variables}
-            onAdd={handleVariableAdd}
-            onUpdate={handleVariableUpdate}
-            onDelete={handleVariableDelete}
-          />
-        </div>
-
-        {/* Canvas */}
-        <div className="flex-1 relative">
-          {viewMode === '2d' ? (
-            <BlueprintCanvas
-              nodes={nodes}
-              connections={connections}
-              selectedNodeId={selectedNodeId}
-              onNodeClick={handleNodeClick}
-              onNodePositionChange={handleNodePositionChange}
-              onNodeDelete={handleDeleteNode}
-              onConnectionCreate={handleConnectionCreate}
-              onConnectionDelete={handleConnectionDelete}
-              snapToGridEnabled={true}
-              initialViewport={viewport}
-              onViewportChange={setViewport}
-            />
-          ) : (
-            <FlowchartCanvas
-              nodes={nodes.map(convertTo3D)}
-              connections={get3DConnections()}
-              selectedNodeId={selectedNodeId}
-              onNodeClick={handleNodeClick}
-              onNodePositionChange={handleNodePositionChange3D}
-              onNodeDelete={handleDeleteNode}
-              onAddNode={(type) => handleAddNode(type)}
-            />
-          )}
-        </div>
-
-        {/* Right Sidebar - Properties & AI Assistant */}
-        <div className="w-80 border-l border-gray-600 bg-[#2a2a2a] flex flex-col">
-          <div className="flex border-b border-gray-600">
-            <button
-              onClick={() => setRightSidebarTab('properties')}
-              className={`flex-1 px-4 py-2 text-white transition-colors ${
-                rightSidebarTab === 'properties'
-                  ? 'bg-[#1a1a1a] border-b-2 border-blue-500'
-                  : 'bg-[#2a2a2a] hover:bg-[#333]'
-              }`}
-            >
-              Properties
-            </button>
-            <button
-              onClick={() => setRightSidebarTab('ai')}
-              className={`flex-1 px-4 py-2 text-white transition-colors ${
-                rightSidebarTab === 'ai'
-                  ? 'bg-[#1a1a1a] border-b-2 border-blue-500'
-                  : 'bg-[#2a2a2a] hover:bg-[#333]'
-              }`}
-            >
-              AI Assistant
-            </button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            {rightSidebarTab === 'properties' ? (
-              <NodePropertiesPanel
-                node={selectedNode || null}
-                nodeType={selectedNodeType}
-                onUpdate={handleNodeUpdate}
+      {isMobile ? (
+        /* Mobile Layout: Vertical Stack */
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Canvas - Takes 60-70% of height */}
+          <div className="flex-[3] min-h-0 relative">
+            {viewMode === '2d' ? (
+              <BlueprintCanvas
+                nodes={nodes}
+                connections={connections}
+                selectedNodeId={selectedNodeId}
+                onNodeClick={handleNodeClick}
+                onNodePositionChange={handleNodePositionChange}
+                onNodeDelete={handleDeleteNode}
+                onConnectionCreate={handleConnectionCreate}
+                onConnectionDelete={handleConnectionDelete}
+                snapToGridEnabled={true}
+                initialViewport={viewport}
+                onViewportChange={setViewport}
               />
             ) : (
-              <AIChatAssistant
-                currentFlowchart={{
-                  nodes: nodes.map(node => ({
-                    id: node.id,
-                    type: node.type,
-                    label: node.label,
-                    position: [node.position[0], 0, node.position[1]] as [number, number, number],
-                  })),
-                  connections: connections.map(c => ({ from: c.fromNodeId, to: c.toNodeId })),
-                }}
-                onApplySuggestion={handleApplySuggestion}
+              <FlowchartCanvas
+                nodes={nodes.map(convertTo3D)}
+                connections={get3DConnections()}
+                selectedNodeId={selectedNodeId}
+                onNodeClick={handleNodeClick}
+                onNodePositionChange={handleNodePositionChange3D}
+                onNodeDelete={handleDeleteNode}
+                onAddNode={(type) => handleAddNode(type)}
               />
             )}
           </div>
+
+          {/* Merged Panel - Takes 30-40% of height */}
+          <div className="flex-[2] min-h-[200px] max-h-[40vh]">
+            <MobileMergedPanel
+              activeTab={mobileTab}
+              onTabChange={setMobileTab}
+              variables={variables}
+              onVariableAdd={handleVariableAdd}
+              onVariableUpdate={handleVariableUpdate}
+              onVariableDelete={handleVariableDelete}
+              selectedNode={selectedNode || null}
+              selectedNodeType={selectedNodeType}
+              onNodeUpdate={handleNodeUpdate}
+              currentFlowchart={{
+                nodes: nodes.map(node => ({
+                  id: node.id,
+                  type: node.type,
+                  label: node.label,
+                  position: [node.position[0], 0, node.position[1]] as [number, number, number],
+                })),
+                connections: connections.map(c => ({ from: c.fromNodeId, to: c.toNodeId })),
+              }}
+              onApplySuggestion={handleApplySuggestion}
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Desktop Layout: Three Columns */
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Sidebar - Variables */}
+          <div className="w-64 border-r border-gray-600 bg-[#2a2a2a] flex flex-col">
+            <VariablesPanel
+              variables={variables}
+              onAdd={handleVariableAdd}
+              onUpdate={handleVariableUpdate}
+              onDelete={handleVariableDelete}
+            />
+          </div>
+
+          {/* Canvas */}
+          <div className="flex-1 relative">
+            {viewMode === '2d' ? (
+              <BlueprintCanvas
+                nodes={nodes}
+                connections={connections}
+                selectedNodeId={selectedNodeId}
+                onNodeClick={handleNodeClick}
+                onNodePositionChange={handleNodePositionChange}
+                onNodeDelete={handleDeleteNode}
+                onConnectionCreate={handleConnectionCreate}
+                onConnectionDelete={handleConnectionDelete}
+                snapToGridEnabled={true}
+                initialViewport={viewport}
+                onViewportChange={setViewport}
+              />
+            ) : (
+              <FlowchartCanvas
+                nodes={nodes.map(convertTo3D)}
+                connections={get3DConnections()}
+                selectedNodeId={selectedNodeId}
+                onNodeClick={handleNodeClick}
+                onNodePositionChange={handleNodePositionChange3D}
+                onNodeDelete={handleDeleteNode}
+                onAddNode={(type) => handleAddNode(type)}
+              />
+            )}
+          </div>
+
+          {/* Right Sidebar - Properties & AI Assistant */}
+          <div className="w-80 border-l border-gray-600 bg-[#2a2a2a] flex flex-col">
+            <div className="flex border-b border-gray-600">
+              <button
+                onClick={() => setRightSidebarTab('properties')}
+                className={`flex-1 px-4 py-2 text-white transition-colors ${
+                  rightSidebarTab === 'properties'
+                    ? 'bg-[#1a1a1a] border-b-2 border-blue-500'
+                    : 'bg-[#2a2a2a] hover:bg-[#333]'
+                }`}
+              >
+                Properties
+              </button>
+              <button
+                onClick={() => setRightSidebarTab('ai')}
+                className={`flex-1 px-4 py-2 text-white transition-colors ${
+                  rightSidebarTab === 'ai'
+                    ? 'bg-[#1a1a1a] border-b-2 border-blue-500'
+                    : 'bg-[#2a2a2a] hover:bg-[#333]'
+                }`}
+              >
+                AI Assistant
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              {rightSidebarTab === 'properties' ? (
+                <NodePropertiesPanel
+                  node={selectedNode || null}
+                  nodeType={selectedNodeType}
+                  onUpdate={handleNodeUpdate}
+                />
+              ) : (
+                <AIChatAssistant
+                  currentFlowchart={{
+                    nodes: nodes.map(node => ({
+                      id: node.id,
+                      type: node.type,
+                      label: node.label,
+                      position: [node.position[0], 0, node.position[1]] as [number, number, number],
+                    })),
+                    connections: connections.map(c => ({ from: c.fromNodeId, to: c.toNodeId })),
+                  }}
+                  onApplySuggestion={handleApplySuggestion}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Node Palette Modal */}
       {showNodePalette && (

@@ -40,8 +40,8 @@ export default function NodePropertiesPanel({
 
   return (
     <div className="w-full h-full bg-[#2a2a2a] flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-600">
+      {/* Header - Hidden on mobile as it's in merged panel */}
+      <div className="hidden md:block p-4 border-b border-gray-600">
         <h3 className="text-lg font-semibold text-white">Node Properties</h3>
         <div className="flex items-center gap-2 mt-2">
           <span className="text-2xl">{nodeType.icon}</span>
@@ -49,8 +49,16 @@ export default function NodePropertiesPanel({
         </div>
       </div>
 
+      {/* Mobile Header */}
+      <div className="md:hidden p-3 border-b border-gray-600">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{nodeType.icon}</span>
+          <span className="text-sm font-semibold text-white">{nodeType.name}</span>
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 scrollbar-thin">
         {/* Label */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -60,7 +68,7 @@ export default function NodePropertiesPanel({
             type="text"
             value={label}
             onChange={(e) => handleLabelChange(e.target.value)}
-            className="w-full px-3 py-2 bg-[#1a1a1a] border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2.5 bg-[#1a1a1a] border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
             placeholder={nodeType.name}
           />
         </div>

@@ -38,13 +38,13 @@ export default function VariablesPanel({
 
   return (
     <div className="w-full h-full bg-[#2a2a2a] flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-600">
+      {/* Header - Hidden on mobile as it's in merged panel */}
+      <div className="hidden md:block p-4 border-b border-gray-600">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white">Variables</h3>
           <button
             onClick={() => setIsAdding(true)}
-            className="p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-colors"
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded transition-all duration-200 hover:scale-110 active:scale-95"
             title="Add Variable"
           >
             <Plus className="w-4 h-4" />
@@ -52,17 +52,29 @@ export default function VariablesPanel({
         </div>
       </div>
 
+      {/* Mobile Header */}
+      <div className="md:hidden p-3 border-b border-gray-600 flex items-center justify-between">
+        <h3 className="text-base font-semibold text-white">Variables</h3>
+        <button
+          onClick={() => setIsAdding(true)}
+          className="p-2 text-gray-400 active:text-white active:bg-[#333] rounded transition-all duration-200 active:scale-95 touch-manipulation"
+          title="Add Variable"
+        >
+          <Plus className="w-5 h-5" />
+        </button>
+      </div>
+
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2 scrollbar-thin">
         {/* Add new variable form */}
         {isAdding && (
-          <div className="p-3 bg-[#1a1a1a] border border-gray-600 rounded-lg space-y-2">
+          <div className="p-3 bg-[#1a1a1a] border border-gray-600 rounded-lg space-y-2 fade-in">
             <input
               type="text"
               value={newVarName}
               onChange={(e) => setNewVarName(e.target.value)}
               placeholder="Variable name"
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 bg-[#2a2a2a] border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
               autoFocus
               onKeyPress={(e) => {
                 if (e.key === 'Enter') handleAdd();
@@ -72,7 +84,7 @@ export default function VariablesPanel({
             <select
               value={newVarType}
               onChange={(e) => setNewVarType(e.target.value as PinType)}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 bg-[#2a2a2a] border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
             >
               {VARIABLE_TYPES.map((type) => (
                 <option key={type} value={type}>
@@ -83,7 +95,7 @@ export default function VariablesPanel({
             <div className="flex gap-2">
               <button
                 onClick={handleAdd}
-                className="flex-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors"
+                className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
               >
                 Add
               </button>
@@ -92,7 +104,7 @@ export default function VariablesPanel({
                   setIsAdding(false);
                   setNewVarName('');
                 }}
-                className="px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
+                className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
               >
                 Cancel
               </button>
@@ -109,11 +121,11 @@ export default function VariablesPanel({
           variables.map((variable) => (
             <div
               key={variable.id}
-              className="p-3 bg-[#1a1a1a] border border-gray-600 rounded-lg"
+              className="p-3 bg-[#1a1a1a] border border-gray-600 rounded-lg transition-all duration-200 hover:border-gray-500 hover:shadow-lg hover-lift"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-white font-medium">{variable.name}</span>
                     <span className="text-xs px-2 py-0.5 bg-gray-700 text-gray-300 rounded">
                       {variable.type}
@@ -125,7 +137,7 @@ export default function VariablesPanel({
                 </div>
                 <button
                   onClick={() => onDelete(variable.id)}
-                  className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                  className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded transition-all duration-200 active:scale-95 touch-manipulation"
                   title="Delete variable"
                 >
                   <Trash2 className="w-4 h-4" />

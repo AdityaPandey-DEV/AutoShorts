@@ -36,8 +36,10 @@ export default function BlueprintNode({
   hoveredPinId,
 }: BlueprintNodeProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number; worldX: number; worldY: number } | null>(null);
+  const [hasMoved, setHasMoved] = useState(false);
   const nodeRef = useRef<HTMLDivElement>(null);
+  const DRAG_THRESHOLD = 5; // Minimum pixels to move before considering it a drag
 
   const inputPins = node.inputPins || nodeType.inputPins || [];
   const outputPins = node.outputPins || nodeType.outputPins || [];
@@ -51,16 +53,18 @@ export default function BlueprintNode({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) { // Left mouse button
       e.stopPropagation();
-      setIsDragging(true);
-      // Store the initial mouse position in screen coordinates
-      // The parent will convert this to world coordinates
+      // Store the initial mouse position in screen coordinates AND the node's current world position
       const canvasElement = e.currentTarget.closest('[data-canvas-container]');
       if (canvasElement) {
         const canvasRect = canvasElement.getBoundingClientRect();
         setDragStart({
           x: e.clientX - canvasRect.left,
           y: e.clientY - canvasRect.top,
+          worldX: node.position[0], // Store current world position
+          worldY: node.position[1],
         });
+        setHasMoved(false);
+        setIsDragging(true);
       }
       onClick();
     }
@@ -83,17 +87,44 @@ export default function BlueprintNode({
           const canvasElement = nodeRef.current.closest('[data-canvas-container]');
           if (canvasElement) {
             const canvasRect = canvasElement.getBoundingClientRect();
-            // Pass screen coordinates - parent will convert to world
-            const screenX = e.clientX - canvasRect.left;
-            const screenY = e.clientY - canvasRect.top;
-            onPositionChange(node.id, [screenX, screenY]);
+            const currentScreenX = e.clientX - canvasRect.left;
+            const currentScreenY = e.clientY - canvasRect.top;
+            
+            // Calculate delta from drag start in screen coordinates
+            const deltaScreenX = currentScreenX - dragStart.x;
+            const deltaScreenY = currentScreenY - dragStart.y;
+            
+            // Check if mouse has moved enough to be considered a drag
+            const distance = Math.sqrt(deltaScreenX * deltaScreenX + deltaScreenY * deltaScreenY);
+            if (distance < DRAG_THRESHOLD) {
+              return; // Don't update position if movement is too small (just a click)
+            }
+            
+            setHasMoved(true);
+            
+            // Convert screen delta to world delta (accounting for zoom)
+            // Since zoom affects the scale, we need to divide by zoom to get world delta
+            const deltaWorldX = deltaScreenX / zoom;
+            const deltaWorldY = deltaScreenY / zoom;
+            
+            // Calculate new world position by adding delta to original world position
+            const newWorldX = dragStart.worldX + deltaWorldX;
+            const newWorldY = dragStart.worldY + deltaWorldY;
+            
+            // Pass the new world position to parent
+            onPositionChange(node.id, [newWorldX, newWorldY]);
           }
         }
       };
 
       const handleGlobalMouseUp = () => {
+        // Only trigger click if we didn't actually drag
+        if (!hasMoved) {
+          // This was just a click, not a drag
+        }
         setIsDragging(false);
         setDragStart(null);
+        setHasMoved(false);
       };
 
       window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -104,7 +135,7 @@ export default function BlueprintNode({
         window.removeEventListener('mouseup', handleGlobalMouseUp);
       };
     }
-  }, [isDragging, dragStart, node.id, onPositionChange]);
+  }, [isDragging, dragStart, node.id, node.position, zoom, onPositionChange, hasMoved]);
 
   // Calculate pin positions
   const getPinY = (index: number) => PIN_START_Y + index * PIN_SPACING;

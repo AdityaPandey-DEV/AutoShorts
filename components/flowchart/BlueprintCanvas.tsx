@@ -440,15 +440,10 @@ export default function BlueprintCanvas({
                 zoom={viewport.zoom}
                 onClick={() => onNodeClick(node.id)}
                 onPositionChange={(id, position) => {
-                  // Convert screen position back to world
-                  const worldPos = screenToWorld(
-                    { x: position[0], y: position[1] },
-                    viewport,
-                    canvasSize
-                  );
+                  // Position is already in world coordinates (calculated as delta from original)
                   const finalPosition = snapToGridEnabled
-                    ? snapToGrid(worldPos.x, worldPos.y, gridSize)
-                    : [worldPos.x, worldPos.y];
+                    ? snapToGrid(position[0], position[1], gridSize)
+                    : [position[0], position[1]];
                   onNodePositionChange(id, finalPosition as [number, number]);
                 }}
                 onDelete={onNodeDelete}

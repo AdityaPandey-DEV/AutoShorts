@@ -84,190 +84,208 @@ export default function FlowchartHeader({
     reader.readAsText(file);
   };
 
+  // Mobile Layout
   if (isMobile) {
     return (
-      <header className="bg-black shadow-sm border-b border-gray-600">
-        {/* Top Row: Logo, Flowchart Name, Menu */}
-        <div className="flex items-center justify-between px-3 py-2 gap-2">
-          <Link href="/dashboard" className="text-xl font-bold text-red-600 flex-shrink-0">
-            AutoShorts
-          </Link>
-          <input
-            type="text"
-            value={flowchartName}
-            onChange={(e) => onFlowchartNameChange(e.target.value)}
-            className="flex-1 text-sm font-semibold bg-transparent border-none focus:outline-none focus:ring-0 text-white placeholder-gray-500 min-w-0"
-            placeholder="Flowchart Name"
-          />
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-white p-2 hover:bg-gray-800 rounded transition-colors"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-
-        {/* Mobile Menu Dropdown */}
-        {mobileMenuOpen && (
-          <div className="border-t border-gray-600 bg-black">
-            <div className="px-3 py-2 space-y-1">
-              <Link href="/dashboard" className="block text-white hover:text-red-500 transition-colors py-2">
-                Dashboard
-              </Link>
-              <Link href="/pricing" className="block text-white hover:text-red-500 transition-colors py-2">
-                Pricing
-              </Link>
-              <Link href="/settings" className="block text-white hover:text-red-500 transition-colors py-2">
-                Settings
-              </Link>
-              {isAdmin && (
-                <Link href="/admin" className="block text-red-600 hover:text-red-500 transition-colors py-2">
-                  Admin
-                </Link>
-              )}
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left text-white hover:text-red-500 transition-colors py-2"
-              >
-                Logout
-              </button>
-            </div>
+      <>
+        {/* Top Bar: Logo, Flowchart Name, Menu */}
+        <header className="bg-black shadow-sm border-b border-gray-600">
+          <div className="flex items-center justify-between px-3 py-2 gap-2">
+            <Link href="/dashboard" className="text-xl font-bold text-red-600 flex-shrink-0">
+              AutoShorts
+            </Link>
+            <input
+              type="text"
+              value={flowchartName}
+              onChange={(e) => onFlowchartNameChange(e.target.value)}
+              className="flex-1 text-sm font-semibold bg-transparent border-none focus:outline-none focus:ring-0 text-white placeholder-gray-500 min-w-0"
+              placeholder="Flowchart Name"
+            />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="text-white p-2 hover:bg-gray-800 rounded transition-colors"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
-        )}
 
-        {/* Toolbar Buttons Row */}
-        <div className="flex items-center gap-1 px-2 py-2 overflow-x-auto scrollbar-hide border-t border-gray-600">
-          <Button
-            onClick={onSave}
-            disabled={saving}
-            className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-            title={saving ? 'Saving...' : 'Save'}
-          >
-            <Save className="w-3.5 h-3.5" />
-            {!isMobile && (saving ? 'Saving...' : 'Save')}
-          </Button>
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="border-t border-gray-600 bg-black">
+              <div className="px-3 py-2 space-y-1">
+                <Link href="/dashboard" className="block text-white hover:text-red-500 transition-colors py-2">
+                  Dashboard
+                </Link>
+                <Link href="/pricing" className="block text-white hover:text-red-500 transition-colors py-2">
+                  Pricing
+                </Link>
+                <Link href="/settings" className="block text-white hover:text-red-500 transition-colors py-2">
+                  Settings
+                </Link>
+                {isAdmin && (
+                  <Link href="/admin" className="block text-red-600 hover:text-red-500 transition-colors py-2">
+                    Admin
+                  </Link>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left text-white hover:text-red-500 transition-colors py-2"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
+        </header>
 
-          <Button
-            variant="secondary"
-            onClick={onAddNode}
-            className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-            title="Add Node"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            {!isMobile && 'Add Node'}
-          </Button>
+        {/* Second Bar: Toolbar Buttons */}
+        <div className="bg-[#2a2a2a] border-b border-gray-600">
+          <div className="flex items-center gap-1 px-2 py-2 overflow-x-auto scrollbar-hide">
+            <Button
+              onClick={onSave}
+              disabled={saving}
+              className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+              title={saving ? 'Saving...' : 'Save'}
+            >
+              <Save className="w-3.5 h-3.5" />
+            </Button>
 
-          {selectedNodeId && (
+            <Button
+              variant="secondary"
+              onClick={onAddNode}
+              className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+              title="Add Node"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </Button>
+
+            {selectedNodeId && (
+              <Button
+                variant="danger"
+                onClick={onDeleteSelected}
+                className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+                title="Delete"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
+
+            {onViewModeChange && (
+              <Button
+                variant="secondary"
+                onClick={() => onViewModeChange(viewMode === '2d' ? '3d' : '2d')}
+                className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+                title={`Switch to ${viewMode === '2d' ? '3D' : '2D'} view`}
+              >
+                {viewMode === '2d' ? (
+                  <Box className="w-3.5 h-3.5" />
+                ) : (
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                )}
+              </Button>
+            )}
+
+            <Button
+              variant="secondary"
+              onClick={onExport}
+              className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+              title="Export"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+
+            <label className="cursor-pointer flex-shrink-0">
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
+                ref={fileInputRef}
+              />
+              <Button
+                variant="secondary"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95"
+                title="Import"
+              >
+                <Upload className="w-3.5 h-3.5" />
+              </Button>
+            </label>
+
             <Button
               variant="danger"
-              onClick={onDeleteSelected}
+              onClick={onClear}
               className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-              title="Delete"
+              title="Clear"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
-          )}
-
-          {onViewModeChange && (
-            <Button
-              variant="secondary"
-              onClick={() => onViewModeChange(viewMode === '2d' ? '3d' : '2d')}
-              className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-              title={`Switch to ${viewMode === '2d' ? '3D' : '2D'} view`}
-            >
-              {viewMode === '2d' ? (
-                <Box className="w-3.5 h-3.5" />
-              ) : (
-                <LayoutGrid className="w-3.5 h-3.5" />
-              )}
-            </Button>
-          )}
-
-          <Button
-            variant="secondary"
-            onClick={onExport}
-            className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-            title="Export"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </Button>
-
-          <label className="cursor-pointer flex-shrink-0">
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              className="hidden"
-              ref={fileInputRef}
-            />
-            <Button
-              variant="secondary"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95"
-              title="Import"
-            >
-              <Upload className="w-3.5 h-3.5" />
-            </Button>
-          </label>
-
-          <Button
-            variant="danger"
-            onClick={onClear}
-            className="flex items-center gap-1 px-2 text-xs transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-            title="Clear"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
+          </div>
         </div>
-      </header>
+      </>
     );
   }
 
   // Desktop Layout
   return (
-    <header className="bg-black shadow-sm border-b border-gray-600">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 gap-4">
-          {/* Left: Logo */}
-          <Link href="/dashboard" className="text-xl font-bold text-red-600 flex-shrink-0">
-            AutoShorts
-          </Link>
+    <>
+      {/* Top Bar: Logo, Flowchart Name, Navigation Links, Logout */}
+      <header className="bg-black shadow-sm border-b border-gray-600">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 gap-4">
+            {/* Left: Logo */}
+            <Link href="/dashboard" className="text-xl font-bold text-red-600 flex-shrink-0">
+              AutoShorts
+            </Link>
 
-          {/* Center: Flowchart Name */}
-          <input
-            type="text"
-            value={flowchartName}
-            onChange={(e) => onFlowchartNameChange(e.target.value)}
-            className="flex-1 max-w-xs text-lg font-semibold bg-transparent border-none focus:outline-none focus:ring-0 text-white placeholder-gray-500"
-            placeholder="Flowchart Name"
-          />
+            {/* Center: Flowchart Name */}
+            <input
+              type="text"
+              value={flowchartName}
+              onChange={(e) => onFlowchartNameChange(e.target.value)}
+              className="flex-1 max-w-xs text-lg font-semibold bg-transparent border-none focus:outline-none focus:ring-0 text-white placeholder-gray-500"
+              placeholder="Flowchart Name"
+            />
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-3 flex-shrink-0">
-            <Link href="/dashboard" className={`text-sm transition-colors ${
-              pathname === '/dashboard' ? 'text-red-500' : 'text-white hover:text-red-500'
-            }`}>
-              Dashboard
-            </Link>
-            <Link href="/pricing" className={`text-sm transition-colors ${
-              pathname === '/pricing' ? 'text-red-500' : 'text-white hover:text-red-500'
-            }`}>
-              Pricing
-            </Link>
-            <Link href="/settings" className={`text-sm transition-colors ${
-              pathname === '/settings' ? 'text-red-500' : 'text-white hover:text-red-500'
-            }`}>
-              Settings
-            </Link>
-            {isAdmin && (
-              <Link href="/admin" className="text-sm text-red-600 hover:text-red-500 font-medium transition-colors">
-                Admin
+            {/* Navigation Links */}
+            <nav className="hidden md:flex items-center space-x-3 flex-shrink-0">
+              <Link href="/dashboard" className={`text-sm transition-colors ${
+                pathname === '/dashboard' ? 'text-red-500' : 'text-white hover:text-red-500'
+              }`}>
+                Dashboard
               </Link>
-            )}
-          </nav>
+              <Link href="/pricing" className={`text-sm transition-colors ${
+                pathname === '/pricing' ? 'text-red-500' : 'text-white hover:text-red-500'
+              }`}>
+                Pricing
+              </Link>
+              <Link href="/settings" className={`text-sm transition-colors ${
+                pathname === '/settings' ? 'text-red-500' : 'text-white hover:text-red-500'
+              }`}>
+                Settings
+              </Link>
+              {isAdmin && (
+                <Link href="/admin" className="text-sm text-red-600 hover:text-red-500 font-medium transition-colors">
+                  Admin
+                </Link>
+              )}
+            </nav>
 
-          {/* Right: Toolbar Buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Right: Logout */}
+            <button
+              onClick={handleLogout}
+              className="text-white hover:text-red-500 transition-colors px-3 py-1.5 text-sm flex-shrink-0"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Second Bar: Toolbar Buttons */}
+      <div className="bg-[#2a2a2a] border-b border-gray-600">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2 h-12">
             <Button
               onClick={onSave}
               disabled={saving}
@@ -353,17 +371,9 @@ export default function FlowchartHeader({
               <Trash2 className="w-4 h-4" />
               Clear
             </Button>
-
-            <button
-              onClick={handleLogout}
-              className="text-white hover:text-red-500 transition-colors px-3 py-1.5 text-sm"
-            >
-              Logout
-            </button>
           </div>
         </div>
       </div>
-    </header>
+    </>
   );
 }
-

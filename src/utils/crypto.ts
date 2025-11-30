@@ -1,21 +1,23 @@
 import crypto from 'crypto';
 
 const ALGO = 'aes-256-gcm';
-const MASTER_KEY = process.env.MASTER_KEY as string;
 
-if (!MASTER_KEY) {
-  throw new Error('MASTER_KEY environment variable is not set');
-}
-
-// Parse master key - support both hex and base64, but expect hex
-let KEY: Buffer;
-try {
-  KEY = Buffer.from(MASTER_KEY, 'hex');
-  if (KEY.length !== 32) {
-    throw new Error('MASTER_KEY must be 32 bytes (64 hex characters)');
+function getMasterKey(): Buffer {
+  const masterKey = process.env.MASTER_KEY;
+  if (!masterKey) {
+    throw new Error('MASTER_KEY environment variable is not set');
   }
-} catch (err) {
-  throw new Error(`Invalid MASTER_KEY format: ${err instanceof Error ? err.message : 'unknown error'}`);
+  
+  // Parse master key - support both hex and base64, but expect hex
+  try {
+    const key = Buffer.from(masterKey, 'hex');
+    if (key.length !== 32) {
+      throw new Error('MASTER_KEY must be 32 bytes (64 hex characters)');
+    }
+    return key;
+  } catch (err) {
+    throw new Error(`Invalid MASTER_KEY format: ${err instanceof Error ? err.message : 'unknown error'}`);
+  }
 }
 
 export interface EncryptedData {
@@ -31,7 +33,7 @@ export interface EncryptedData {
  */
 export function encryptText(plain: string): EncryptedData {
   const iv = crypto.randomBytes(12); // 12 bytes for GCM
-  const cipher = crypto.createCipheriv(ALGO, KEY, iv);
+  const cipher = crypto.createCipheriv(ALGO, getMasterKey(), iv);
   
   const enc = Buffer.concat([
     cipher.update(plain, 'utf8'),
@@ -55,7 +57,7 @@ export function encryptText(plain: string): EncryptedData {
  * @returns Decrypted plaintext string
  */
 export function decryptText(encrypted: Buffer, iv: Buffer, authTag: Buffer): string {
-  const decipher = crypto.createDecipheriv(ALGO, KEY, iv);
+  const decipher = crypto.createDecipheriv(ALGO, getMasterKey(), iv);
   decipher.setAuthTag(authTag);
   
   const decrypted = Buffer.concat([

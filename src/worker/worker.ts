@@ -1,18 +1,14 @@
 import { Worker } from 'bullmq';
-import { connection } from '../services/queue';
+import { getConnection } from '../services/queue';
 import { handleGenerateAndUploadJob } from '../jobs/generateAndUpload';
 import { incrementUsage } from '../services/usage';
 import pool from '../db';
 import { logger } from '../utils/logger';
 import { JobData } from '../types';
 
-const REDIS_URL = process.env.REDIS_URL;
-
-if (!REDIS_URL) {
-  throw new Error('REDIS_URL environment variable is not set');
-}
-
 logger.info('Starting BullMQ worker...');
+
+const connection = getConnection();
 
 // Create the worker
 const worker = new Worker(
@@ -82,7 +78,7 @@ const worker = new Worker(
     }
   },
   {
-    connection,
+    connection: getConnection(),
     concurrency: 1, // Process one job at a time (can be increased)
     limiter: {
       max: 5, // Max 5 jobs

@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:20-slim AS base
 
 # Install ffmpeg for video processing
 RUN apt-get update && apt-get install -y \
@@ -6,27 +6,42 @@ RUN apt-get update && apt-get install -y \
     bash \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/src/app
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-# Install dependencies
-RUN npm ci --only=production
-
-# Copy source code
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build TypeScript
+# Build Next.js
 RUN npm run build
 
-# Expose port
-EXPOSE 4000
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+ENV NODE_ENV production
 
-# Start the application
-CMD ["node", "dist/server.js"]
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
+# Copy necessary files
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]

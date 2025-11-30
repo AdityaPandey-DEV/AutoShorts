@@ -1,47 +1,58 @@
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
-import dotenv from 'dotenv';
 
-dotenv.config();
+function getRedisConnection() {
+  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+  const connection = new IORedis(redisUrl, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  });
 
-const REDIS_URL = process.env.REDIS_URL;
+  connection.on('error', (err) => {
+    console.error('Redis connection error:', err);
+  });
 
-if (!REDIS_URL) {
-  throw new Error('REDIS_URL environment variable is not set');
+  connection.on('connect', () => {
+    console.log('Connected to Redis');
+  });
+
+  return connection;
 }
 
-// Create Redis connection for BullMQ
-const connection = new IORedis(REDIS_URL, {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-});
+// Lazy initialization to avoid errors during build
+let _connection: IORedis | null = null;
+let _queue: Queue | null = null;
 
-connection.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
+function getConnection(): IORedis {
+  if (!_connection) {
+    _connection = getRedisConnection();
+  }
+  return _connection;
+}
 
-connection.on('connect', () => {
-  console.log('Connected to Redis');
-});
+export function getQueue(): Queue {
+  if (!_queue) {
+    _queue = new Queue('generate-upload', {
+      connection: getConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+        removeOnComplete: {
+          age: 24 * 3600, // Keep completed jobs for 24 hours
+          count: 100, // Keep max 100 completed jobs
+        },
+        removeOnFail: {
+          age: 7 * 24 * 3600, // Keep failed jobs for 7 days
+        },
+      },
+    });
+  }
+  return _queue;
+}
 
-// Create the queue instance
-export const generateUploadQueue = new Queue('generate-upload', {
-  connection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-    removeOnComplete: {
-      age: 24 * 3600, // Keep completed jobs for 24 hours
-      count: 100, // Keep max 100 completed jobs
-    },
-    removeOnFail: {
-      age: 7 * 24 * 3600, // Keep failed jobs for 7 days
-    },
-  },
-});
-
-export { connection };
+export const generateUploadQueue = getQueue();
+export { getConnection };
 

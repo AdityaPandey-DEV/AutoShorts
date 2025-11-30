@@ -6,6 +6,7 @@ import { ViewportState } from '@/src/types/flowchart';
 import GridBackground, { snapToGrid } from './GridBackground';
 import BlueprintNodeComponent from './BlueprintNode';
 import BlueprintConnections from './BlueprintConnections';
+import CanvasNavigationControls from './CanvasNavigationControls';
 import { FlowchartNodeType, getNodeType } from './NodeTypes';
 import { screenToWorld, worldToScreen, bezierPath } from './utils/canvasUtils';
 import { validateConnection } from './utils/typeCompatibility';
@@ -32,6 +33,8 @@ const MAX_ZOOM = 3;
 const DEFAULT_PAN_X = 0;
 const DEFAULT_PAN_Y = 0;
 const DEFAULT_GRID_SIZE = 20;
+const PAN_STEP_SIZE = 50; // Pixels to pan per arrow key press
+const ZOOM_STEP = 0.1; // Zoom increment/decrement
 
 export default function BlueprintCanvas({
   nodes,
@@ -193,9 +196,67 @@ export default function BlueprintCanvas({
   }, [nodes, connectingFrom, onConnectionCreate]);
   
 
-  // Handle keyboard shortcuts
+  // Handle keyboard shortcuts and arrow key navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle arrow keys if not typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Arrow key navigation for panning
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const step = PAN_STEP_SIZE / viewport.zoom; // Adjust step based on zoom level
+        
+        setViewport(prev => {
+          let newPanX = prev.panX;
+          let newPanY = prev.panY;
+          
+          switch (e.key) {
+            case 'ArrowUp':
+              newPanY -= step;
+              break;
+            case 'ArrowDown':
+              newPanY += step;
+              break;
+            case 'ArrowLeft':
+              newPanX -= step;
+              break;
+            case 'ArrowRight':
+              newPanX += step;
+              break;
+          }
+          
+          return {
+            ...prev,
+            panX: newPanX,
+            panY: newPanY,
+          };
+        });
+        return;
+      }
+
+      // Zoom with +/- keys
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setViewport(prev => ({
+          ...prev,
+          zoom: Math.min(MAX_ZOOM, prev.zoom + ZOOM_STEP),
+        }));
+        return;
+      }
+      
+      if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setViewport(prev => ({
+          ...prev,
+          zoom: Math.max(MIN_ZOOM, prev.zoom - ZOOM_STEP),
+        }));
+        return;
+      }
+
+      // Other keyboard shortcuts
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedNodeId) {
           onNodeDelete(selectedNodeId);
@@ -208,7 +269,56 @@ export default function BlueprintCanvas({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNodeId, onNodeDelete]);
+  }, [selectedNodeId, onNodeDelete, viewport.zoom]);
+
+  // Navigation handlers for mobile buttons
+  const handlePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+    const step = PAN_STEP_SIZE / viewport.zoom;
+    
+    setViewport(prev => {
+      let newPanX = prev.panX;
+      let newPanY = prev.panY;
+      
+      switch (direction) {
+        case 'up':
+          newPanY -= step;
+          break;
+        case 'down':
+          newPanY += step;
+          break;
+        case 'left':
+          newPanX -= step;
+          break;
+        case 'right':
+          newPanX += step;
+          break;
+      }
+      
+      return {
+        ...prev,
+        panX: newPanX,
+        panY: newPanY,
+      };
+    });
+  }, [viewport.zoom]);
+
+  const handleZoom = useCallback((direction: 'in' | 'out') => {
+    setViewport(prev => ({
+      ...prev,
+      zoom: direction === 'in' 
+        ? Math.min(MAX_ZOOM, prev.zoom + ZOOM_STEP)
+        : Math.max(MIN_ZOOM, prev.zoom - ZOOM_STEP),
+    }));
+  }, []);
+
+  const handleReset = useCallback(() => {
+    // Reset to center viewport
+    setViewport({
+      zoom: DEFAULT_ZOOM,
+      panX: DEFAULT_PAN_X,
+      panY: DEFAULT_PAN_Y,
+    });
+  }, []);
 
   // Calculate connection positions
   const connectionsWithPositions = connections.map(conn => {
@@ -392,8 +502,16 @@ export default function BlueprintCanvas({
 
       {/* Controls overlay */}
       <div className="absolute bottom-4 left-4 bg-black/70 text-white px-4 py-2 rounded-lg text-sm pointer-events-none">
-        Zoom: {(viewport.zoom * 100).toFixed(0)}% • Shift+Drag to pan • Click pin to connect
+        Zoom: {(viewport.zoom * 100).toFixed(0)}% • Shift+Drag to pan • Arrow keys to navigate • Click pin to connect
       </div>
+
+      {/* Navigation Controls (Mobile only) */}
+      <CanvasNavigationControls
+        onPan={handlePan}
+        onZoom={handleZoom}
+        onReset={handleReset}
+        viewMode="2d"
+      />
     </div>
   );
 }

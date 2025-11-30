@@ -1,10 +1,12 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
+import * as THREE from 'three';
 import EditableFlowchartNode from './EditableFlowchartNode';
 import FlowchartConnections from '@/components/home/FlowchartConnections';
+import CanvasNavigationControls from './CanvasNavigationControls';
 import { FlowchartNodeType, getNodeType } from './NodeTypes';
 
 export interface FlowchartNode {
@@ -42,6 +44,12 @@ export default function FlowchartCanvas({
   onNodeDelete,
   onAddNode,
 }: FlowchartCanvasProps) {
+  const controlsRef = useRef<any>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const CAMERA_MOVE_STEP = 1;
+  const CAMERA_ZOOM_STEP = 0.5;
+  const DEFAULT_CAMERA_POSITION: [number, number, number] = [0, 5, 10];
+
   const handleCanvasClick = (e: any) => {
     // If clicking on empty space, deselect
     if (e.object === e.scene || e.object === e.camera) {
@@ -57,10 +65,105 @@ export default function FlowchartCanvas({
     }
   };
 
+  // Navigation handlers
+  const handlePan = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+    if (!cameraRef.current || !controlsRef.current) return;
+
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    const moveVector = new THREE.Vector3();
+
+    switch (direction) {
+      case 'up':
+        moveVector.set(0, CAMERA_MOVE_STEP, 0);
+        break;
+      case 'down':
+        moveVector.set(0, -CAMERA_MOVE_STEP, 0);
+        break;
+      case 'left':
+        moveVector.set(-CAMERA_MOVE_STEP, 0, 0);
+        break;
+      case 'right':
+        moveVector.set(CAMERA_MOVE_STEP, 0, 0);
+        break;
+    }
+
+    // Apply movement to both camera and target
+    camera.position.add(moveVector);
+    if (controls.target) {
+      controls.target.add(moveVector);
+      controls.update();
+    }
+  }, []);
+
+  const handleZoom = useCallback((direction: 'in' | 'out') => {
+    if (!cameraRef.current || !controlsRef.current) return;
+
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    const zoomDirection = direction === 'in' ? -CAMERA_ZOOM_STEP : CAMERA_ZOOM_STEP;
+    
+    // Move camera forward/backward along its look direction
+    const directionVector = new THREE.Vector3();
+    camera.getWorldDirection(directionVector);
+    camera.position.add(directionVector.multiplyScalar(zoomDirection));
+    
+    controls.update();
+  }, []);
+
+  const handleReset = useCallback(() => {
+    if (!cameraRef.current || !controlsRef.current) return;
+
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    
+    camera.position.set(...DEFAULT_CAMERA_POSITION);
+    if (controls.target) {
+      controls.target.set(0, 0, 0);
+      controls.update();
+    }
+  }, []);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle arrow keys if not typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const direction = e.key.replace('Arrow', '').toLowerCase() as 'up' | 'down' | 'left' | 'right';
+        handlePan(direction);
+        return;
+      }
+
+      // Zoom with +/- keys
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        handleZoom('in');
+        return;
+      }
+      
+      if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        handleZoom('out');
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePan, handleZoom]);
+
   return (
     <div className="w-full h-full bg-black rounded-lg overflow-hidden relative">
       <Canvas
-        camera={{ position: [0, 5, 10], fov: 50 }}
+        camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}
+        onCreated={({ camera }) => {
+          cameraRef.current = camera as THREE.PerspectiveCamera;
+        }}
         onPointerMissed={handleCanvasClick}
         onDoubleClick={handleDoubleClick}
       >
@@ -106,6 +209,7 @@ export default function FlowchartCanvas({
 
           {/* Camera Controls */}
           <OrbitControls
+            ref={controlsRef}
             enablePan={true}
             enableZoom={true}
             enableRotate={true}
@@ -117,8 +221,16 @@ export default function FlowchartCanvas({
 
       {/* Controls Help */}
       <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm">
-        Click node to select • Drag to move • Double-click canvas to add node
+        Click node to select • Drag to move • Arrow keys to navigate • Double-click canvas to add node
       </div>
+
+      {/* Navigation Controls (Mobile only) */}
+      <CanvasNavigationControls
+        onPan={handlePan}
+        onZoom={handleZoom}
+        onReset={handleReset}
+        viewMode="3d"
+      />
     </div>
   );
 }

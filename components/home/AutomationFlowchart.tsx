@@ -5,8 +5,8 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import FlowchartNode from './FlowchartNode';
 import FlowchartConnections from './FlowchartConnections';
-import MetricsDisplay from './MetricsDisplay';
 import NodeInfoModal from './NodeInfoModal';
+import MetricsDisplayHTML from './MetricsDisplayHTML';
 
 const nodeData = [
   {
@@ -210,12 +210,10 @@ export default function AutomationFlowchart() {
           />
         </Suspense>
 
-        {/* Metrics Display - outside Suspense to ensure immediate rendering */}
-        <MetricsDisplay
-          position={[2, -3, 0]}
-          metrics={metrics}
-        />
       </Canvas>
+
+      {/* HTML Metrics Display below canvas */}
+      <MetricsDisplayHTML metrics={metrics} />
 
       {/* Info Modal */}
       <NodeInfoModal

@@ -163,12 +163,11 @@ export default function FlowchartEditorPage() {
       return;
     }
 
-    // Position new node at origin [0, 0] which maps to canvas center
-    // Canvas center is always visible regardless of pan/zoom
+    // Position new node at current viewport center so it's always visible
     const newNode: BlueprintNode = {
       id: `node-${Date.now()}`,
       type,
-      position: [0, 0], // Canvas center in world coordinates
+      position: [viewport.panX, viewport.panY], // Current viewport center
       label: nodeType.name,
       inputPins: nodeType.inputPins ? [...nodeType.inputPins] : [],
       outputPins: nodeType.outputPins ? [...nodeType.outputPins] : [],
@@ -176,6 +175,8 @@ export default function FlowchartEditorPage() {
 
     setNodes(prev => [...prev, newNode]);
     setShowNodePalette(false);
+    // Select the newly added node
+    setSelectedNodeId(newNode.id);
   };
 
   const handleDeleteNode = (nodeId: string) => {

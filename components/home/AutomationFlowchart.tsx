@@ -96,9 +96,9 @@ const connections = [
 ];
 
 const metrics = [
-  { label: 'Views', value: 1200000, suffix: '+', color: '#DC2626' },
-  { label: 'Subscribers', value: 50000, suffix: '+', color: '#16A34A' },
-  { label: 'Earnings', value: 5000, suffix: '/month', color: '#16A34A' },
+  { label: 'Views', value: 9999999, suffix: '+', color: '#DC2626' },
+  { label: 'Subscribers', value: 999999, suffix: '+', color: '#16A34A' },
+  { label: 'Earnings', value: 99999, suffix: '+/month', color: '#16A34A' },
 ];
 
 export default function AutomationFlowchart() {

@@ -104,12 +104,25 @@ const metrics = [
 export default function AutomationFlowchart() {
   const [selectedNode, setSelectedNode] = useState<typeof nodeData[0] | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [webglSupported, setWebglSupported] = useState(true);
 
   useEffect(() => {
+    // Check WebGL support
+    const checkWebGL = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        setWebglSupported(!!gl);
+      } catch (e) {
+        setWebglSupported(false);
+      }
+    };
+
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
     
+    checkWebGL();
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -120,8 +133,8 @@ export default function AutomationFlowchart() {
     setSelectedNode(node || null);
   };
 
-  // 2D Simplified version for mobile
-  if (isMobile) {
+  // 2D Simplified version for mobile only if WebGL is not supported
+  if (isMobile && !webglSupported) {
     return (
       <div className="w-full bg-black rounded-lg p-6">
         <div className="grid grid-cols-1 gap-6">
@@ -177,16 +190,26 @@ export default function AutomationFlowchart() {
   return (
     <>
       {/* Canvas Container */}
-      <div className="w-full h-[600px] bg-black rounded-lg overflow-hidden relative">
-        <Canvas camera={{ position: [0, 3, 10], fov: 50 }}>
+      <div className={`w-full ${isMobile ? 'h-[400px]' : 'h-[600px]'} bg-black rounded-lg overflow-hidden relative`}>
+        <Canvas 
+          camera={{ position: [0, 3, 10], fov: isMobile ? 60 : 50 }}
+          gl={{ 
+            preserveDrawingBuffer: true, 
+            alpha: true,
+            antialias: !isMobile, // Disable antialiasing on mobile for better performance
+            powerPreference: 'high-performance',
+          }}
+          dpr={isMobile ? Math.min(window.devicePixelRatio, 2) : undefined} // Limit DPR on mobile
+          performance={{ min: 0.5 }} // Allow lower framerate on mobile
+        >
           {/* Lighting - outside Suspense for immediate rendering */}
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
-          <pointLight position={[-10, -10, -5]} intensity={0.5} />
+          {!isMobile && <pointLight position={[-10, -10, -5]} intensity={0.5} />}
 
           <Suspense fallback={null}>
-            {/* Environment */}
-            <Environment preset="night" />
+          {/* Environment - lighter on mobile for performance */}
+          {!isMobile && <Environment preset="night" />}
 
             {/* Flowchart Nodes */}
             {nodeData.map((node) => (
@@ -203,22 +226,30 @@ export default function AutomationFlowchart() {
             {/* Connections */}
             <FlowchartConnections connections={connections} />
 
-            {/* Camera Controls */}
-            <OrbitControls
-              enablePan={true}
-              enableZoom={true}
-              enableRotate={true}
-              minDistance={5}
-              maxDistance={20}
-              autoRotate={false}
-            />
+          {/* Camera Controls - optimized for mobile touch */}
+          <OrbitControls
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            minDistance={isMobile ? 6 : 5}
+            maxDistance={isMobile ? 18 : 20}
+            autoRotate={false}
+            touches={{
+              ONE: 2, // Rotate
+              TWO: 1, // Zoom
+            }}
+          />
           </Suspense>
 
         </Canvas>
 
         {/* Controls Help Text */}
-        <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm">
-          Click blocks to learn more • Drag to rotate • Scroll to zoom
+        <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm z-10">
+          {isMobile ? (
+            <>Tap blocks to learn more • Swipe to rotate • Pinch to zoom</>
+          ) : (
+            <>Click blocks to learn more • Drag to rotate • Scroll to zoom</>
+          )}
         </div>
       </div>
 

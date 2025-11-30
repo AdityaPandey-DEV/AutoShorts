@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 interface ApiKey {
   provider: string;
-  masked_value: string;
+  masked: string;
 }
 
 export default function ApiKeysManager() {
@@ -24,10 +24,16 @@ export default function ApiKeysManager() {
     setLoading(true);
     try {
       const response = await fetch('/api/admin/api-keys');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching API keys:', errorData);
+        throw new Error(errorData.error || 'Failed to fetch API keys');
+      }
       const data = await response.json();
       setKeys(data.keys || []);
     } catch (error) {
       console.error('Error fetching API keys:', error);
+      setKeys([]);
     } finally {
       setLoading(false);
     }
@@ -44,12 +50,18 @@ export default function ApiKeysManager() {
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         setFormData({ provider: '', value: '' });
         fetchKeys();
+      } else {
+        console.error('Error saving API key:', data.error || 'Unknown error');
+        alert(data.error || 'Failed to save API key');
       }
     } catch (error) {
       console.error('Error saving API key:', error);
+      alert('Failed to save API key. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -117,7 +129,7 @@ export default function ApiKeysManager() {
               >
                 <div>
                   <span className="font-medium text-gray-900 capitalize">{key.provider}</span>
-                  <p className="text-sm text-gray-500 mt-1">{key.masked_value}</p>
+                  <p className="text-sm text-gray-500 mt-1">{key.masked}</p>
                 </div>
               </div>
             ))}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Save, Plus, Trash2, Download, Upload, RotateCcw, RotateCw } from 'lucide-react';
 import { NODE_TYPES_ARRAY } from './NodeTypes';
 import Button from '@/components/ui/Button';
@@ -31,7 +31,7 @@ export default function FlowchartToolbar({
   saving = false,
 }: FlowchartToolbarProps) {
   const [showNodeMenu, setShowNodeMenu] = useState(false);
-  const fileInputRef = useState<HTMLInputElement | null>(null)[0];
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -148,13 +148,11 @@ export default function FlowchartToolbar({
             accept=".json"
             onChange={handleImport}
             className="hidden"
-            ref={(el) => {
-              if (el) (fileInputRef as any).current = el;
-            }}
+            ref={fileInputRef}
           />
           <Button
             variant="secondary"
-            onClick={() => (fileInputRef as any)?.current?.click()}
+            onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-2"
           >
             <Upload className="w-4 h-4" />

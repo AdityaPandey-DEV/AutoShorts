@@ -30,7 +30,7 @@ interface FlowchartCanvasProps {
   onNodeClick: (nodeId: string) => void;
   onNodePositionChange: (nodeId: string, position: [number, number, number]) => void;
   onNodeDelete: (nodeId: string) => void;
-  onAddNode: (type: string, position: [number, number, number]) => void;
+  onAddNode: (type: string) => void;
 }
 
 export default function FlowchartCanvas({
@@ -52,10 +52,8 @@ export default function FlowchartCanvas({
   const handleDoubleClick = (e: any) => {
     // Double-click to add node at cursor position
     if (e.object === e.scene || e.object === e.camera) {
-      // Get 3D position from mouse
-      // For now, add at a default position
-      const position: [number, number, number] = [0, 0, 0];
-      onAddNode('ai-thinking', position);
+      // Add node at default position
+      onAddNode('ai-thinking');
     }
   };
 

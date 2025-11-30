@@ -40,16 +40,18 @@ export default function EditableFlowchartNode({
   const color = isSelected ? '#FBBF24' : (hovered ? nodeType.color : nodeType.color);
 
   useFrame((state) => {
-    if (meshRef.current && !isDragging) {
+    if (!meshRef.current) return;
+    
+    if (!isDragging) {
       // Gentle floating animation when not dragging
       meshRef.current.position.y = node.position[1] + Math.sin(state.clock.elapsedTime * 0.5) * 0.05;
     }
     
     // Scale animation
     if (hovered || isSelected) {
-      meshRef.current?.scale.lerp(new THREE.Vector3(1.15, 1.15, 1.15), 0.1);
+      meshRef.current.scale.lerp(new THREE.Vector3(1.15, 1.15, 1.15), 0.1);
     } else {
-      meshRef.current?.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+      meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
     }
   });
 

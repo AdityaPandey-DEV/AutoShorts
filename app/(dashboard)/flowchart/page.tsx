@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import BlueprintCanvas from '@/components/flowchart/BlueprintCanvas';
+import FlowchartCanvas, { FlowchartNode, FlowchartConnection } from '@/components/flowchart/FlowchartCanvas';
 import NodePalette from '@/components/flowchart/NodePalette';
 import NodePropertiesPanel from '@/components/flowchart/NodePropertiesPanel';
 import VariablesPanel from '@/components/flowchart/VariablesPanel';
@@ -26,7 +27,47 @@ export default function FlowchartEditorPage() {
   const [showNodePalette, setShowNodePalette] = useState(false);
   const [viewport, setViewport] = useState<ViewportState>({ zoom: 1, panX: 0, panY: 0 });
   const [rightSidebarTab, setRightSidebarTab] = useState<'properties' | 'ai'>('properties');
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Convert BlueprintNode (2D) to FlowchartNode (3D)
+  const convertTo3D = (node: BlueprintNode): FlowchartNode => ({
+    id: node.id,
+    type: node.type,
+    position: [node.position[0], 0, node.position[1]], // [x, 0, y] for 3D
+    label: node.label,
+    data: node.data,
+  });
+
+  // Convert FlowchartNode (3D) to BlueprintNode (2D)
+  const convertTo2D = (node: FlowchartNode): BlueprintNode => {
+    const nodeType = getNodeType(node.type);
+    return {
+      id: node.id,
+      type: node.type,
+      position: [node.position[0], node.position[2]], // [x, z] for 2D
+      label: node.label,
+      data: node.data,
+      inputPins: nodeType?.inputPins ? [...nodeType.inputPins] : [],
+      outputPins: nodeType?.outputPins ? [...nodeType.outputPins] : [],
+    };
+  };
+
+  // Convert BlueprintConnection to FlowchartConnection with current node positions
+  const get3DConnections = (): FlowchartConnection[] => {
+    return connections.map(conn => {
+      const fromNode = nodes.find(n => n.id === conn.fromNodeId);
+      const toNode = nodes.find(n => n.id === conn.toNodeId);
+      
+      return {
+        id: conn.id,
+        from: conn.fromNodeId,
+        to: conn.toNodeId,
+        fromPosition: fromNode ? [fromNode.position[0], 0, fromNode.position[1]] : [0, 0, 0],
+        toPosition: toNode ? [toNode.position[0], 0, toNode.position[1]] : [0, 0, 0],
+      };
+    });
+  };
 
   // Load flowchart if ID provided
   useEffect(() => {
@@ -151,6 +192,13 @@ export default function FlowchartEditorPage() {
     ));
   };
 
+  const handleNodePositionChange3D = (nodeId: string, position: [number, number, number]) => {
+    // Convert 3D position to 2D and update
+    setNodes(prev => prev.map(node =>
+      node.id === nodeId ? { ...node, position: [position[0], position[2]] } : node
+    ));
+  };
+
   const handleAddNode = (type: string) => {
     if (!type) {
       // Empty string means open palette
@@ -164,11 +212,13 @@ export default function FlowchartEditorPage() {
       return;
     }
 
-    // Position new node at current viewport center so it's always visible
+    // Position new node at the visible center of the canvas
+    // When viewport is at default (0, 0), world position [0, 0] maps to screen center
+    // So we position at [0, 0] which will be visible at the center
     const newNode: BlueprintNode = {
       id: `node-${Date.now()}`,
       type,
-      position: [viewport.panX, viewport.panY], // Current viewport center
+      position: [0, 0], // Center of world space, which maps to screen center when viewport is at default
       label: nodeType.name,
       inputPins: nodeType.inputPins ? [...nodeType.inputPins] : [],
       outputPins: nodeType.outputPins ? [...nodeType.outputPins] : [],
@@ -307,6 +357,8 @@ export default function FlowchartEditorPage() {
         onImport={handleImport}
         selectedNodeId={selectedNodeId}
         saving={saving}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {/* Editor Area */}
@@ -323,19 +375,31 @@ export default function FlowchartEditorPage() {
 
         {/* Canvas */}
         <div className="flex-1 relative">
-          <BlueprintCanvas
-            nodes={nodes}
-            connections={connections}
-            selectedNodeId={selectedNodeId}
-            onNodeClick={handleNodeClick}
-            onNodePositionChange={handleNodePositionChange}
-            onNodeDelete={handleDeleteNode}
-            onConnectionCreate={handleConnectionCreate}
-            onConnectionDelete={handleConnectionDelete}
-            snapToGridEnabled={true}
-            initialViewport={viewport}
-            onViewportChange={setViewport}
-          />
+          {viewMode === '2d' ? (
+            <BlueprintCanvas
+              nodes={nodes}
+              connections={connections}
+              selectedNodeId={selectedNodeId}
+              onNodeClick={handleNodeClick}
+              onNodePositionChange={handleNodePositionChange}
+              onNodeDelete={handleDeleteNode}
+              onConnectionCreate={handleConnectionCreate}
+              onConnectionDelete={handleConnectionDelete}
+              snapToGridEnabled={true}
+              initialViewport={viewport}
+              onViewportChange={setViewport}
+            />
+          ) : (
+            <FlowchartCanvas
+              nodes={nodes.map(convertTo3D)}
+              connections={get3DConnections()}
+              selectedNodeId={selectedNodeId}
+              onNodeClick={handleNodeClick}
+              onNodePositionChange={handleNodePositionChange3D}
+              onNodeDelete={handleDeleteNode}
+              onAddNode={(type) => handleAddNode(type)}
+            />
+          )}
         </div>
 
         {/* Right Sidebar - Properties & AI Assistant */}

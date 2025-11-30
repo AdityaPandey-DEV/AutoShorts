@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import { Save, Plus, Trash2, Download, Upload } from 'lucide-react';
+import { Save, Plus, Trash2, Download, Upload, LayoutGrid, Box } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
 interface FlowchartToolbarProps {
@@ -13,6 +13,8 @@ interface FlowchartToolbarProps {
   onImport: (data: any) => void;
   selectedNodeId: string | null;
   saving?: boolean;
+  viewMode?: '2d' | '3d';
+  onViewModeChange?: (mode: '2d' | '3d') => void;
 }
 
 export default function FlowchartToolbar({
@@ -24,6 +26,8 @@ export default function FlowchartToolbar({
   onImport,
   selectedNodeId,
   saving = false,
+  viewMode = '2d',
+  onViewModeChange,
 }: FlowchartToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -81,6 +85,28 @@ export default function FlowchartToolbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* View Toggle */}
+        {onViewModeChange && (
+          <Button
+            variant="secondary"
+            onClick={() => onViewModeChange(viewMode === '2d' ? '3d' : '2d')}
+            className="flex items-center gap-2"
+            title={`Switch to ${viewMode === '2d' ? '3D' : '2D'} view`}
+          >
+            {viewMode === '2d' ? (
+              <>
+                <Box className="w-4 h-4" />
+                3D View
+              </>
+            ) : (
+              <>
+                <LayoutGrid className="w-4 h-4" />
+                2D View
+              </>
+            )}
+          </Button>
+        )}
+
         {/* Export/Import */}
         <Button
           variant="secondary"

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import pool from '@/src/db';
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -20,6 +21,7 @@ export interface JWTPayload {
 export interface AuthUser {
   id: number;
   email?: string;
+  isAdmin?: boolean;
 }
 
 /**
@@ -61,10 +63,36 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     return null;
   }
 
-  return {
-    id: decoded.userId,
-    email: decoded.email,
-  };
+  // Fetch user details from database including is_admin flag
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT id, email, is_admin FROM users WHERE id = $1',
+        [decoded.userId]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const user = result.rows[0];
+      return {
+        id: user.id,
+        email: user.email,
+        isAdmin: user.is_admin || false,
+      };
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    // Fallback to basic info if DB query fails
+    return {
+      id: decoded.userId,
+      email: decoded.email,
+      isAdmin: false,
+    };
+  }
 }
 
 /**
@@ -94,6 +122,17 @@ export async function requireAuth(): Promise<AuthUser> {
   const user = await getAuthUser();
   if (!user) {
     throw new Error('Unauthorized');
+  }
+  return user;
+}
+
+/**
+ * Middleware helper to check admin authentication
+ */
+export async function requireAdmin(): Promise<AuthUser> {
+  const user = await requireAuth();
+  if (!user.isAdmin) {
+    throw new Error('Forbidden: Admin access required');
   }
   return user;
 }

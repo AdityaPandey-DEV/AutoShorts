@@ -53,7 +53,7 @@ export default function SignUpForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-lg mb-4">
+      <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 rounded-lg mb-4">
         <p className="font-semibold">🎉 7 Days Free Trial - No Credit Card Required</p>
       </div>
 
@@ -97,11 +97,11 @@ export default function SignUpForm() {
         />
         <label htmlFor="terms" className="text-sm text-gray-700">
           I agree to the{' '}
-          <a href="#" className="text-purple-600 hover:underline">
+          <a href="#" className="text-red-600 hover:underline">
             Terms of Service
           </a>{' '}
           and{' '}
-          <a href="#" className="text-purple-600 hover:underline">
+          <a href="#" className="text-red-600 hover:underline">
             Privacy Policy
           </a>
         </label>
@@ -139,7 +139,7 @@ export default function SignUpForm() {
       </Button>
 
       <div className="text-center text-sm">
-        <a href="/signin" className="text-purple-600 hover:underline">
+        <a href="/signin" className="text-red-600 hover:underline">
           Already have an account? Sign in
         </a>
       </div>

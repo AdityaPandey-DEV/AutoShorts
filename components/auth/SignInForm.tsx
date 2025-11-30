@@ -102,7 +102,7 @@ export default function SignInForm() {
       </Button>
 
       <div className="text-center text-sm">
-        <a href="/signup" className="text-purple-600 hover:underline">
+        <a href="/signup" className="text-red-600 hover:underline">
           Don&apos;t have an account? Sign up
         </a>
       </div>

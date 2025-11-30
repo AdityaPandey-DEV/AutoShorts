@@ -108,7 +108,7 @@ export default function ApiKeysManager() {
             <select
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+              className="w-full px-4 py-2 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600"
               required
             >
               <option value="">Select provider</option>

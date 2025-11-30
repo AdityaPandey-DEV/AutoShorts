@@ -101,7 +101,7 @@ export default async function DashboardPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Trial Banner */}
       {subscription.status === 'trial' && subscription.trialEndsAt && (
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-lg mb-8 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 rounded-lg mb-8 flex justify-between items-center">
           <div>
             <p className="font-semibold text-lg mb-1">🎉 Free Trial Active!</p>
             <p>
@@ -137,6 +137,9 @@ export default async function DashboardPage() {
           <Card>
             <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
             <div className="space-y-3">
+              <Link href="/flowchart" className="block">
+                <Button fullWidth>Create Flowchart</Button>
+              </Link>
               <Link href="/pricing" className="block">
                 <Button fullWidth>Upgrade Plan</Button>
               </Link>

@@ -48,17 +48,17 @@ export default function PricingCard({ plan }: PricingCardProps) {
 
   return (
     <Card
-      className={`relative ${isPro ? 'border-4 border-purple-600 transform scale-105' : ''}`}
+      className={`relative ${isPro ? 'border-4 border-green-600 transform scale-105' : ''}`}
     >
       {isPro && (
-        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
           POPULAR
         </div>
       )}
       <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.displayName}</h3>
+        <h3 className="text-2xl font-bold text-black mb-2">{plan.displayName}</h3>
         <div className="flex items-baseline justify-center">
-          <span className="text-5xl font-bold text-purple-600">${plan.priceMonthly}</span>
+          <span className="text-5xl font-bold text-red-600">${plan.priceMonthly}</span>
           <span className="text-gray-600 ml-2">/month</span>
         </div>
         {plan.priceYearly && (

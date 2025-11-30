@@ -41,7 +41,7 @@ export default function JobsList({ jobs }: JobsListProps) {
                     href={`https://www.youtube.com/watch?v=${job.youtubeVideoId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-purple-600 hover:underline mt-1 inline-block"
+                    className="text-sm text-red-600 hover:underline mt-1 inline-block"
                   >
                     View on YouTube →
                   </a>

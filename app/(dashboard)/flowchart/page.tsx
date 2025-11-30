@@ -30,6 +30,7 @@ export default function FlowchartEditorPage() {
   const [showNodePalette, setShowNodePalette] = useState(false);
   const [viewport, setViewport] = useState<ViewportState>({ zoom: 1, panX: 0, panY: 0 });
   const [rightSidebarTab, setRightSidebarTab] = useState<'properties' | 'ai'>('properties');
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 1200, height: 800 });
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [isMobile, setIsMobile] = useState(false);
   const [mobileTab, setMobileTab] = useState<'variables' | 'properties' | 'ai'>('variables');
@@ -229,20 +230,18 @@ export default function FlowchartEditorPage() {
     }
 
     // Position new node at the visible center of the canvas
-    // Use screenToWorld to convert screen center to world coordinates
-    // This accounts for zoom, pan, and canvas size correctly
+    // Use actual canvas size from BlueprintCanvas to calculate visible center
     // Formula: worldX = (screenX - canvasWidth/2) / zoom + panX
     // For screen center: worldX = (canvasWidth/2 - canvasWidth/2) / zoom + panX = panX
-    // So [panX, panY] should be correct, but let's use screenToWorld to be safe
-    // Use a reasonable default canvas size (actual size will be close)
-    const defaultCanvasSize = { width: 1200, height: 800 }; // More realistic default
-    const screenCenter = { x: defaultCanvasSize.width / 2, y: defaultCanvasSize.height / 2 };
-    const worldCenter = screenToWorld(screenCenter, viewport, defaultCanvasSize);
+    // But we need to use the actual canvas size, not a default
+    const screenCenter = { x: canvasSize.width / 2, y: canvasSize.height / 2 };
+    const worldCenter = screenToWorld(screenCenter, viewport, canvasSize);
+    const nodePosition: [number, number] = [worldCenter.x, worldCenter.y];
     
     const newNode: BlueprintNode = {
       id: `node-${Date.now()}`,
       type,
-      position: [worldCenter.x, worldCenter.y], // Visible center calculated from screen center
+      position: nodePosition, // Visible center from actual canvas size
       label: nodeType.name,
       inputPins: nodeType.inputPins ? [...nodeType.inputPins] : [],
       outputPins: nodeType.outputPins ? [...nodeType.outputPins] : [],
@@ -441,6 +440,7 @@ export default function FlowchartEditorPage() {
                 initialViewport={viewport}
                 onViewportChange={setViewport}
                 onVariableDrop={handleVariableDrop}
+                onCanvasSizeChange={setCanvasSize}
               />
             ) : (
               <FlowchartCanvas
@@ -509,6 +509,7 @@ export default function FlowchartEditorPage() {
                 initialViewport={viewport}
                 onViewportChange={setViewport}
                 onVariableDrop={handleVariableDrop}
+                onCanvasSizeChange={setCanvasSize}
               />
             ) : (
               <FlowchartCanvas

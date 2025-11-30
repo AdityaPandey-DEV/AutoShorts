@@ -26,6 +26,7 @@ interface BlueprintCanvasProps {
   initialViewport?: ViewportState;
   onViewportChange?: (viewport: ViewportState) => void;
   onVariableDrop?: (variableId: string, variableName: string, variableType: string, position: [number, number]) => void;
+  onCanvasSizeChange?: (size: { width: number; height: number }) => void;
 }
 
 const DEFAULT_ZOOM = 1;
@@ -51,6 +52,7 @@ export default function BlueprintCanvas({
   initialViewport,
   onViewportChange,
   onVariableDrop,
+  onCanvasSizeChange,
 }: BlueprintCanvasProps) {
   // Wrapper for onNodeClick that also clears connection preview
   const handleNodeClickWithClear = useCallback((nodeId: string) => {
@@ -75,13 +77,19 @@ export default function BlueprintCanvas({
     }
   }, [initialViewport]);
   
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+  
   // Notify parent of viewport changes
   useEffect(() => {
     onViewportChange?.(viewport);
   }, [viewport, onViewportChange]);
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+
+  // Notify parent of canvas size changes
+  useEffect(() => {
+    onCanvasSizeChange?.(canvasSize);
+  }, [canvasSize, onCanvasSizeChange]);
   const [hoveredPinId, setHoveredPinId] = useState<string | null>(null);
   const [connectingFrom, setConnectingFrom] = useState<{ nodeId: string; pinId: string; pinType: PinType; x: number; y: number } | null>(null);
   const [connectionPreview, setConnectionPreview] = useState<{ x: number; y: number } | null>(null);

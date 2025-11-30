@@ -8,7 +8,7 @@ import NodePalette from '@/components/flowchart/NodePalette';
 import NodePropertiesPanel from '@/components/flowchart/NodePropertiesPanel';
 import VariablesPanel from '@/components/flowchart/VariablesPanel';
 import MobileMergedPanel from '@/components/flowchart/MobileMergedPanel';
-import FlowchartToolbar from '@/components/flowchart/FlowchartToolbar';
+import FlowchartHeader from '@/components/flowchart/FlowchartHeader';
 import AIChatAssistant from '@/components/flowchart/AIChatAssistant';
 import { BlueprintNode, BlueprintConnection, BlueprintFlowchartData, FlowchartVariable, CommentBox, ViewportState } from '@/src/types/flowchart';
 import { getNodeType } from '@/components/flowchart/NodeTypes';
@@ -343,7 +343,7 @@ export default function FlowchartEditorPage() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-64px)] flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-lg text-gray-600">Loading flowchart...</div>
         </div>
@@ -352,20 +352,11 @@ export default function FlowchartEditorPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#1a1a1a]">
-      {/* Header */}
-      <div className="bg-[#2a2a2a] border-b border-gray-600 px-6 py-4">
-        <input
-          type="text"
-          value={flowchartName}
-          onChange={(e) => setFlowchartName(e.target.value)}
-          className="text-2xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 text-white w-full placeholder-gray-500"
-          placeholder="Flowchart Name"
-        />
-      </div>
-
-      {/* Toolbar */}
-      <FlowchartToolbar
+    <div className="h-screen flex flex-col bg-[#1a1a1a] overflow-hidden">
+      {/* Merged Header (includes navigation and toolbar) */}
+      <FlowchartHeader
+        flowchartName={flowchartName}
+        onFlowchartNameChange={setFlowchartName}
         onSave={() => handleSave(true)}
         onAddNode={() => setShowNodePalette(true)}
         onDeleteSelected={handleDeleteSelected}

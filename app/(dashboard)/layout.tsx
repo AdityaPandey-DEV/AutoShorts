@@ -1,4 +1,4 @@
-import Header from '@/components/layout/Header';
+import ConditionalHeader from '@/components/layout/ConditionalHeader';
 import { redirect } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth';
 
@@ -15,7 +15,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <ConditionalHeader />
       <main>{children}</main>
     </div>
   );

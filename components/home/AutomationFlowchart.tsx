@@ -173,44 +173,52 @@ export default function AutomationFlowchart() {
   }
 
   return (
-    <div className="w-full h-[600px] bg-black rounded-lg overflow-hidden">
-      <Canvas camera={{ position: [0, 3, 10], fov: 50 }}>
-        {/* Lighting - outside Suspense for immediate rendering */}
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
-        <pointLight position={[-10, -10, -5]} intensity={0.5} />
+    <>
+      {/* Canvas Container */}
+      <div className="w-full h-[600px] bg-black rounded-lg overflow-hidden relative">
+        <Canvas camera={{ position: [0, 3, 10], fov: 50 }}>
+          {/* Lighting - outside Suspense for immediate rendering */}
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[10, 10, 5]} intensity={1} />
+          <pointLight position={[-10, -10, -5]} intensity={0.5} />
 
-        <Suspense fallback={null}>
-          {/* Environment */}
-          <Environment preset="night" />
+          <Suspense fallback={null}>
+            {/* Environment */}
+            <Environment preset="night" />
 
-          {/* Flowchart Nodes */}
-          {nodeData.map((node) => (
-            <FlowchartNode
-              key={node.id}
-              position={node.position}
-              label={node.label}
-              color={node.color}
-              icon={node.icon}
-              onClick={() => handleNodeClick(node.id)}
+            {/* Flowchart Nodes */}
+            {nodeData.map((node) => (
+              <FlowchartNode
+                key={node.id}
+                position={node.position}
+                label={node.label}
+                color={node.color}
+                icon={node.icon}
+                onClick={() => handleNodeClick(node.id)}
+              />
+            ))}
+
+            {/* Connections */}
+            <FlowchartConnections connections={connections} />
+
+            {/* Camera Controls */}
+            <OrbitControls
+              enablePan={true}
+              enableZoom={true}
+              enableRotate={true}
+              minDistance={5}
+              maxDistance={20}
+              autoRotate={false}
             />
-          ))}
+          </Suspense>
 
-          {/* Connections */}
-          <FlowchartConnections connections={connections} />
+        </Canvas>
 
-          {/* Camera Controls */}
-          <OrbitControls
-            enablePan={true}
-            enableZoom={true}
-            enableRotate={true}
-            minDistance={5}
-            maxDistance={20}
-            autoRotate={false}
-          />
-        </Suspense>
-
-      </Canvas>
+        {/* Controls Help Text */}
+        <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm">
+          Click blocks to learn more • Drag to rotate • Scroll to zoom
+        </div>
+      </div>
 
       {/* HTML Metrics Display below canvas */}
       <MetricsDisplayHTML metrics={metrics} />
@@ -225,12 +233,7 @@ export default function AutomationFlowchart() {
         } : null}
         onClose={() => setSelectedNode(null)}
       />
-
-      {/* Controls Help Text */}
-      <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm">
-        Click blocks to learn more • Drag to rotate • Scroll to zoom
-      </div>
-    </div>
+    </>
   );
 }
 

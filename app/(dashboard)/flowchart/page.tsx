@@ -25,6 +25,7 @@ export default function FlowchartEditorPage() {
   const [loading, setLoading] = useState(false);
   const [showNodePalette, setShowNodePalette] = useState(false);
   const [viewport, setViewport] = useState<ViewportState>({ zoom: 1, panX: 0, panY: 0 });
+  const [rightSidebarTab, setRightSidebarTab] = useState<'properties' | 'ai'>('properties');
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Load flowchart if ID provided
@@ -312,17 +313,12 @@ export default function FlowchartEditorPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Variables */}
         <div className="w-64 border-r border-gray-600 bg-[#2a2a2a] flex flex-col">
-          <div className="p-4 border-b border-gray-600">
-            <h3 className="text-lg font-semibold text-white">Variables</h3>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <VariablesPanel
-              variables={variables}
-              onAdd={handleVariableAdd}
-              onUpdate={handleVariableUpdate}
-              onDelete={handleVariableDelete}
-            />
-          </div>
+          <VariablesPanel
+            variables={variables}
+            onAdd={handleVariableAdd}
+            onUpdate={handleVariableUpdate}
+            onDelete={handleVariableDelete}
+          />
         </div>
 
         {/* Canvas */}
@@ -342,36 +338,52 @@ export default function FlowchartEditorPage() {
           />
         </div>
 
-        {/* Right Sidebar - Properties */}
+        {/* Right Sidebar - Properties & AI Assistant */}
         <div className="w-80 border-l border-gray-600 bg-[#2a2a2a] flex flex-col">
           <div className="flex border-b border-gray-600">
-            <button className="flex-1 px-4 py-2 text-white bg-[#1a1a1a] border-b-2 border-blue-500">
+            <button
+              onClick={() => setRightSidebarTab('properties')}
+              className={`flex-1 px-4 py-2 text-white transition-colors ${
+                rightSidebarTab === 'properties'
+                  ? 'bg-[#1a1a1a] border-b-2 border-blue-500'
+                  : 'bg-[#2a2a2a] hover:bg-[#333]'
+              }`}
+            >
               Properties
+            </button>
+            <button
+              onClick={() => setRightSidebarTab('ai')}
+              className={`flex-1 px-4 py-2 text-white transition-colors ${
+                rightSidebarTab === 'ai'
+                  ? 'bg-[#1a1a1a] border-b-2 border-blue-500'
+                  : 'bg-[#2a2a2a] hover:bg-[#333]'
+              }`}
+            >
+              AI Assistant
             </button>
           </div>
           <div className="flex-1 overflow-hidden">
-            <NodePropertiesPanel
-              node={selectedNode || null}
-              nodeType={selectedNodeType}
-              onUpdate={handleNodeUpdate}
-            />
+            {rightSidebarTab === 'properties' ? (
+              <NodePropertiesPanel
+                node={selectedNode || null}
+                nodeType={selectedNodeType}
+                onUpdate={handleNodeUpdate}
+              />
+            ) : (
+              <AIChatAssistant
+                currentFlowchart={{
+                  nodes: nodes.map(node => ({
+                    id: node.id,
+                    type: node.type,
+                    label: node.label,
+                    position: [node.position[0], 0, node.position[1]] as [number, number, number],
+                  })),
+                  connections: connections.map(c => ({ from: c.fromNodeId, to: c.toNodeId })),
+                }}
+                onApplySuggestion={handleApplySuggestion}
+              />
+            )}
           </div>
-        </div>
-
-        {/* AI Chat - Bottom Right Overlay */}
-        <div className="absolute bottom-4 right-[340px] w-80 h-96 border border-gray-600 rounded-lg bg-[#2a2a2a] shadow-xl flex flex-col z-10">
-          <AIChatAssistant
-            currentFlowchart={{
-              nodes: nodes.map(node => ({
-                id: node.id,
-                type: node.type,
-                label: node.label,
-                position: [node.position[0], 0, node.position[1]] as [number, number, number],
-              })),
-              connections: connections.map(c => ({ from: c.fromNodeId, to: c.toNodeId })),
-            }}
-            onApplySuggestion={handleApplySuggestion}
-          />
         </div>
       </div>
 

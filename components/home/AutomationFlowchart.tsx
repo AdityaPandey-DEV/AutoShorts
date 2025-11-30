@@ -136,42 +136,137 @@ export default function AutomationFlowchart() {
   // 2D Simplified version for mobile only if WebGL is not supported
   if (isMobile && !webglSupported) {
     return (
-      <div className="w-full bg-black rounded-lg p-6">
-        <div className="grid grid-cols-1 gap-6">
-          {nodeData.map((node, index) => (
-            <div
-              key={node.id}
-              className="bg-white rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleNodeClick(node.id)}
-            >
-              <div className="flex items-start gap-4">
-                <div className="text-4xl">{node.icon}</div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-black mb-2">{node.label}</h3>
-                  <p className="text-gray-600">{node.description.substring(0, 100)}...</p>
-                </div>
+      <>
+        <div className="w-full bg-black rounded-lg p-4 md:p-6 overflow-x-auto">
+          {/* 2D Flowchart Container */}
+          <div className="relative min-h-[500px] py-8" style={{ minWidth: '800px' }}>
+            <svg className="absolute inset-0 w-full h-full" style={{ minWidth: '800px', minHeight: '400px' }}>
+              <defs>
+                <marker
+                  id="arrowhead-red"
+                  markerWidth="10"
+                  markerHeight="10"
+                  refX="9"
+                  refY="3"
+                  orient="auto"
+                >
+                  <polygon points="0 0, 10 3, 0 6" fill="#DC2626" />
+                </marker>
+                <marker
+                  id="arrowhead-green"
+                  markerWidth="10"
+                  markerHeight="10"
+                  refX="9"
+                  refY="3"
+                  orient="auto"
+                >
+                  <polygon points="0 0, 10 3, 0 6" fill="#16A34A" />
+                </marker>
+                <marker
+                  id="arrowhead-green-dashed"
+                  markerWidth="10"
+                  markerHeight="10"
+                  refX="9"
+                  refY="3"
+                  orient="auto"
+                >
+                  <polygon points="0 0, 10 3, 0 6" fill="#16A34A" />
+                </marker>
+              </defs>
+              
+              {/* Arrow 1: AI Thinking → Video Creator */}
+              <line
+                x1="140"
+                y1="48"
+                x2="240"
+                y2="200"
+                stroke="#DC2626"
+                strokeWidth="3"
+                markerEnd="url(#arrowhead-red)"
+              />
+              
+              {/* Arrow 2: Video Creator → YouTube Upload */}
+              <line
+                x1="260"
+                y1="224"
+                x2="500"
+                y2="224"
+                stroke="#DC2626"
+                strokeWidth="3"
+                markerEnd="url(#arrowhead-red)"
+              />
+              
+              {/* Arrow 3: YouTube Upload → Feedback Loop */}
+              <line
+                x1="620"
+                y1="224"
+                x2="660"
+                y2="48"
+                stroke="#16A34A"
+                strokeWidth="3"
+                markerEnd="url(#arrowhead-green)"
+              />
+              
+              {/* Arrow 4: Feedback Loop → AI Thinking (Loop Back - curved) */}
+              <path
+                d="M 700 48 L 700 100 Q 700 280, 80 280 Q 80 100, 80 48"
+                stroke="#16A34A"
+                strokeWidth="3"
+                strokeDasharray="5,5"
+                fill="none"
+                markerEnd="url(#arrowhead-green-dashed)"
+              />
+            </svg>
+
+            {/* Flowchart Blocks */}
+            <div className="relative w-full h-full">
+              {/* AI Thinking Block - Top Left */}
+              <div
+                className="absolute bg-red-600 rounded-lg shadow-lg cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 flex flex-col items-center justify-center border-2 border-red-500"
+                style={{ left: '0px', top: '0px', width: '120px', height: '96px' }}
+                onClick={() => handleNodeClick('ai-thinking')}
+              >
+                <div className="text-3xl mb-1">🧠</div>
+                <div className="text-white text-xs font-bold text-center px-2">AI Thinking</div>
+              </div>
+
+              {/* Video Creator Block - Middle Left */}
+              <div
+                className="absolute bg-red-600 rounded-lg shadow-lg cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 flex flex-col items-center justify-center border-2 border-red-500"
+                style={{ left: '200px', top: '176px', width: '120px', height: '96px' }}
+                onClick={() => handleNodeClick('video-creator')}
+              >
+                <div className="text-3xl mb-1">🎬</div>
+                <div className="text-white text-xs font-bold text-center px-2">Video Creator</div>
+              </div>
+
+              {/* YouTube Upload Block - Middle Right */}
+              <div
+                className="absolute bg-green-600 rounded-lg shadow-lg cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 flex flex-col items-center justify-center border-2 border-green-500"
+                style={{ left: '440px', top: '176px', width: '120px', height: '96px' }}
+                onClick={() => handleNodeClick('youtube-upload')}
+              >
+                <div className="text-3xl mb-1">📺</div>
+                <div className="text-white text-xs font-bold text-center px-2">YouTube Upload</div>
+              </div>
+
+              {/* Feedback Loop Block - Top Right */}
+              <div
+                className="absolute bg-green-600 rounded-lg shadow-lg cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 flex flex-col items-center justify-center border-2 border-green-500"
+                style={{ left: '640px', top: '0px', width: '120px', height: '96px' }}
+                onClick={() => handleNodeClick('feedback-loop')}
+              >
+                <div className="text-3xl mb-1">📊</div>
+                <div className="text-white text-xs font-bold text-center px-2">Feedback Loop</div>
               </div>
             </div>
-          ))}
-        </div>
-        
-        {/* Metrics on Mobile */}
-        <div className="grid grid-cols-3 gap-4 mt-8">
-          {metrics.map((metric, index) => (
-            <div key={index} className="bg-gray-800 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-white mb-1">
-                {metric.value >= 1000000 
-                  ? (metric.value / 1000000).toFixed(1) + 'M'
-                  : metric.value >= 1000 
-                  ? (metric.value / 1000).toFixed(1) + 'K'
-                  : metric.value}
-                {metric.suffix}
-              </div>
-              <div className="text-sm text-gray-400">{metric.label}</div>
-            </div>
-          ))}
+          </div>
         </div>
 
+        {/* HTML Metrics Display below canvas */}
+        <MetricsDisplayHTML metrics={metrics} />
+
+        {/* Info Modal */}
         <NodeInfoModal
           node={selectedNode ? {
             label: selectedNode.label,
@@ -183,7 +278,7 @@ export default function AutomationFlowchart() {
           } : null}
           onClose={() => setSelectedNode(null)}
         />
-      </div>
+      </>
     );
   }
 
@@ -192,7 +287,7 @@ export default function AutomationFlowchart() {
       {/* Canvas Container */}
       <div className={`w-full ${isMobile ? 'h-[400px]' : 'h-[600px]'} bg-black rounded-lg overflow-hidden relative`}>
         <Canvas 
-          camera={{ position: [0, 3, 10], fov: isMobile ? 60 : 50 }}
+          camera={{ position: [0, 2.5, isMobile ? 12 : 10], fov: isMobile ? 55 : 50 }}
           gl={{ 
             preserveDrawingBuffer: true, 
             alpha: true,
@@ -226,17 +321,17 @@ export default function AutomationFlowchart() {
             {/* Connections */}
             <FlowchartConnections connections={connections} />
 
-          {/* Camera Controls - optimized for mobile touch */}
+          {/* Camera Controls - panning enabled, rotation disabled */}
           <OrbitControls
             enablePan={true}
             enableZoom={true}
-            enableRotate={true}
-            minDistance={isMobile ? 6 : 5}
+            enableRotate={false}
+            minDistance={isMobile ? 8 : 5}
             maxDistance={isMobile ? 18 : 20}
             autoRotate={false}
             touches={{
-              ONE: 2, // Rotate
-              TWO: 1, // Zoom
+              ONE: 1, // Pan (drag to move)
+              TWO: 2, // Zoom (pinch to zoom)
             }}
           />
           </Suspense>
@@ -246,9 +341,9 @@ export default function AutomationFlowchart() {
         {/* Controls Help Text */}
         <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm z-10">
           {isMobile ? (
-            <>Tap blocks to learn more • Swipe to rotate • Pinch to zoom</>
+            <>Tap blocks to learn more • Drag to pan • Pinch to zoom</>
           ) : (
-            <>Click blocks to learn more • Drag to rotate • Scroll to zoom</>
+            <>Click blocks to learn more • Drag to pan • Scroll to zoom</>
           )}
         </div>
       </div>

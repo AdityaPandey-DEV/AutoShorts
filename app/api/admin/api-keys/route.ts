@@ -22,10 +22,30 @@ export async function GET() {
       );
     }
     
-    logger.error('Error listing admin API keys:', error);
+    // Log full error details for debugging
+    logger.error('Error listing admin API keys:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+    });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to list API keys';
+    let statusCode = 500;
+    
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      errorMessage = 'Database connection failed. Please check DATABASE_URL environment variable.';
+      statusCode = 503;
+    } else if (error.code === '42P01') {
+      errorMessage = 'Database table not found. Please run database migrations.';
+      statusCode = 500;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to list API keys', details: error.message },
-      { status: 500 }
+      { error: errorMessage, details: process.env.NODE_ENV === 'development' ? error.message : undefined },
+      { status: statusCode }
     );
   }
 }
@@ -65,10 +85,35 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    logger.error('Error storing admin API key:', error);
+    // Log full error details for debugging
+    logger.error('Error storing admin API key:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      detail: error.detail,
+      constraint: error.constraint,
+    });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to store API key';
+    let statusCode = 500;
+    
+    if (error.message?.includes('MASTER_KEY')) {
+      errorMessage = 'Encryption key not configured. Please set MASTER_KEY environment variable.';
+      statusCode = 500;
+    } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      errorMessage = 'Database connection failed. Please check DATABASE_URL environment variable.';
+      statusCode = 503;
+    } else if (error.code === '42P01') {
+      errorMessage = 'Database table not found. Please run database migrations.';
+      statusCode = 500;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to store API key', details: error.message },
-      { status: 500 }
+      { error: errorMessage, details: process.env.NODE_ENV === 'development' ? error.message : undefined },
+      { status: statusCode }
     );
   }
 }

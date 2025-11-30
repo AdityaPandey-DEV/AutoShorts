@@ -8,7 +8,23 @@ import { encryptText, decryptText } from '../utils/crypto';
  * @param value - Plaintext API key or token to encrypt and store
  */
 export async function storeApiKey(userId: number, provider: string, value: string): Promise<void> {
-  const { encrypted, iv, authTag } = encryptText(value);
+  let encrypted: Buffer;
+  let iv: Buffer;
+  let authTag: Buffer;
+  
+  // Encrypt the API key - catch encryption errors
+  try {
+    const encryptedData = encryptText(value);
+    encrypted = encryptedData.encrypted;
+    iv = encryptedData.iv;
+    authTag = encryptedData.authTag;
+  } catch (error: any) {
+    if (error.message?.includes('MASTER_KEY')) {
+      throw new Error('MASTER_KEY environment variable is not set. Cannot encrypt API key.');
+    }
+    throw new Error(`Failed to encrypt API key: ${error.message || 'Unknown encryption error'}`);
+  }
+  
   const client = await pool.connect();
   
   try {
@@ -23,6 +39,16 @@ export async function storeApiKey(userId: number, provider: string, value: strin
          updated_at = CURRENT_TIMESTAMP`,
       [userId, provider, encrypted, iv, authTag]
     );
+  } catch (error: any) {
+    // Re-throw with more context
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      throw new Error('Database connection failed. Please check DATABASE_URL environment variable.');
+    } else if (error.code === '42P01') {
+      throw new Error('Database table "api_keys" does not exist. Please run database migrations.');
+    } else if (error.code === '23503') {
+      throw new Error(`User with ID ${userId} does not exist in the database.`);
+    }
+    throw error;
   } finally {
     client.release();
   }

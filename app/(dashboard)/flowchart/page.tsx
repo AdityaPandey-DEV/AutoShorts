@@ -254,6 +254,34 @@ export default function FlowchartEditorPage() {
     setSelectedNodeId(newNode.id);
   };
 
+  const handleVariableDrop = (variableId: string, variableName: string, variableType: string, position: [number, number]) => {
+    // Create a node that represents getting a variable value
+    // Use the variable's type to determine the node type (string, number, boolean, etc.)
+    // Store the variable reference in the node's data
+    const nodeType = getNodeType(variableType);
+    if (!nodeType) {
+      console.error('Node type not found for variable type:', variableType);
+      return;
+    }
+
+    const newNode: BlueprintNode = {
+      id: `node-${Date.now()}`,
+      type: variableType, // Use the variable's type as the node type
+      position,
+      label: `Get ${variableName}`, // Label the node with the variable name
+      inputPins: nodeType.inputPins ? [...nodeType.inputPins] : [],
+      outputPins: nodeType.outputPins ? [...nodeType.outputPins] : [],
+      data: {
+        variableId, // Store reference to the variable
+        variableName,
+      },
+    };
+
+    setNodes(prev => [...prev, newNode]);
+    // Select the newly added node
+    setSelectedNodeId(newNode.id);
+  };
+
   const handleDeleteNode = (nodeId: string) => {
     setNodes(prev => prev.filter(n => n.id !== nodeId));
     setConnections(prev => prev.filter(c => c.fromNodeId !== nodeId && c.toNodeId !== nodeId));
@@ -412,6 +440,7 @@ export default function FlowchartEditorPage() {
                 snapToGridEnabled={true}
                 initialViewport={viewport}
                 onViewportChange={setViewport}
+                onVariableDrop={handleVariableDrop}
               />
             ) : (
               <FlowchartCanvas
@@ -479,6 +508,7 @@ export default function FlowchartEditorPage() {
                 snapToGridEnabled={true}
                 initialViewport={viewport}
                 onViewportChange={setViewport}
+                onVariableDrop={handleVariableDrop}
               />
             ) : (
               <FlowchartCanvas

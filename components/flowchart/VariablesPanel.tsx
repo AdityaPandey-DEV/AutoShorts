@@ -121,7 +121,26 @@ export default function VariablesPanel({
           variables.map((variable) => (
             <div
               key={variable.id}
-              className="p-3 bg-[#1a1a1a] border border-gray-600 rounded-lg transition-all duration-200 hover:border-gray-500 hover:shadow-lg hover-lift"
+              draggable={true}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('application/variable', JSON.stringify({
+                  id: variable.id,
+                  name: variable.name,
+                  type: variable.type,
+                }));
+                e.dataTransfer.effectAllowed = 'copy';
+                // Visual feedback
+                if (e.currentTarget) {
+                  e.currentTarget.style.opacity = '0.5';
+                }
+              }}
+              onDragEnd={(e) => {
+                // Restore opacity
+                if (e.currentTarget) {
+                  e.currentTarget.style.opacity = '1';
+                }
+              }}
+              className="p-3 bg-[#1a1a1a] border border-gray-600 rounded-lg transition-all duration-200 hover:border-gray-500 hover:shadow-lg hover-lift cursor-move"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">

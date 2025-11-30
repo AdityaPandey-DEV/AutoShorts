@@ -25,6 +25,7 @@ interface BlueprintCanvasProps {
   gridSize?: number;
   initialViewport?: ViewportState;
   onViewportChange?: (viewport: ViewportState) => void;
+  onVariableDrop?: (variableId: string, variableName: string, variableType: string, position: [number, number]) => void;
 }
 
 const DEFAULT_ZOOM = 1;
@@ -49,6 +50,7 @@ export default function BlueprintCanvas({
   gridSize = DEFAULT_GRID_SIZE,
   initialViewport,
   onViewportChange,
+  onVariableDrop,
 }: BlueprintCanvasProps) {
   // Wrapper for onNodeClick that also clears connection preview
   const handleNodeClickWithClear = useCallback((nodeId: string) => {
@@ -149,6 +151,49 @@ export default function BlueprintCanvas({
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, viewport.zoom * delta));
     setViewport(prev => ({ ...prev, zoom: newZoom }));
   }, [viewport.zoom]);
+
+  // Handle drag and drop for variables
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    
+    // Check if this is a variable drop
+    const variableData = e.dataTransfer.getData('application/variable');
+    if (variableData && onVariableDrop) {
+      try {
+        const variable = JSON.parse(variableData);
+        
+        // Calculate drop position in world coordinates
+        const canvasRect = canvasRef.current?.getBoundingClientRect();
+        if (canvasRect) {
+          const screenX = e.clientX - canvasRect.left;
+          const screenY = e.clientY - canvasRect.top;
+          const worldPos = screenToWorld(
+            { x: screenX, y: screenY },
+            viewport,
+            canvasSize
+          );
+          
+          const finalPosition = snapToGridEnabled
+            ? snapToGrid(worldPos.x, worldPos.y, gridSize)
+            : [worldPos.x, worldPos.y];
+          
+          onVariableDrop(
+            variable.id,
+            variable.name,
+            variable.type,
+            finalPosition as [number, number]
+          );
+        }
+      } catch (error) {
+        console.error('Error parsing variable drop data:', error);
+      }
+    }
+  }, [onVariableDrop, viewport, canvasSize, snapToGridEnabled, gridSize]);
 
   // Handle pin click for connections with type validation
   const handlePinClick = useCallback((nodeId: string, pinId: string, direction: 'input' | 'output') => {
@@ -384,6 +429,8 @@ export default function BlueprintCanvas({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onWheel={handleWheel}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
       onContextMenu={(e) => e.preventDefault()}
     >
       {/* Grid Background */}

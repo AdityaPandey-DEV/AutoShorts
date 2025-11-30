@@ -47,7 +47,7 @@ export default function FlowchartListClient({ initialFlowcharts }: FlowchartList
     return (
       <Card className="text-center py-12">
         <p className="text-gray-600 mb-4">You haven't created any flowcharts yet.</p>
-        <Link href="/flowchart">
+        <Link href="/flowchart?id=new">
           <Button>Create Your First Flowchart</Button>
         </Link>
       </Card>

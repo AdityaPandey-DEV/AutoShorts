@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import BlueprintCanvas from '@/components/flowchart/BlueprintCanvas';
 import FlowchartCanvas, { FlowchartNode, FlowchartConnection } from '@/components/flowchart/FlowchartCanvas';
 import NodePalette from '@/components/flowchart/NodePalette';
@@ -9,15 +9,30 @@ import NodePropertiesPanel from '@/components/flowchart/NodePropertiesPanel';
 import VariablesPanel from '@/components/flowchart/VariablesPanel';
 import MobileMergedPanel from '@/components/flowchart/MobileMergedPanel';
 import FlowchartToolbar from '@/components/flowchart/FlowchartToolbar';
+import FlowchartListClient from '@/components/flowchart/FlowchartListClient';
 import Link from 'next/link';
 import AIChatAssistant from '@/components/flowchart/AIChatAssistant';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import { BlueprintNode, BlueprintConnection, BlueprintFlowchartData, FlowchartVariable, CommentBox, ViewportState } from '@/src/types/flowchart';
 import { screenToWorld } from '@/components/flowchart/utils/canvasUtils';
 import { getNodeType } from '@/components/flowchart/NodeTypes';
 import { convertLegacyToBlueprint } from '@/components/flowchart/utils/convertLegacy';
 
-export default function FlowchartEditorPage() {
+interface Flowchart {
+  id: number;
+  name: string;
+  description: string | null;
+  flowchartData: {
+    nodes: any[];
+    connections: any[];
+  };
+  updatedAt: Date;
+}
+
+export default function FlowchartPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [nodes, setNodes] = useState<BlueprintNode[]>([]);
   const [connections, setConnections] = useState<BlueprintConnection[]>([]);
   const [variables, setVariables] = useState<FlowchartVariable[]>([]);
@@ -35,6 +50,8 @@ export default function FlowchartEditorPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileTab, setMobileTab] = useState<'variables' | 'properties' | 'ai'>('variables');
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const [flowcharts, setFlowcharts] = useState<Flowchart[]>([]);
+  const [loadingFlowcharts, setLoadingFlowcharts] = useState(false);
 
   // Detect mobile vs desktop
   useEffect(() => {
@@ -86,13 +103,49 @@ export default function FlowchartEditorPage() {
     });
   };
 
-  // Load flowchart if ID provided
+  // Fetch flowcharts list when no id is provided
   useEffect(() => {
     const id = searchParams.get('id');
-    if (id) {
-      loadFlowchart(parseInt(id, 10));
+    if (!id) {
+      fetchFlowcharts();
     }
   }, [searchParams]);
+
+  // Load flowchart if ID provided (and it's not 'new')
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (id && id !== 'new') {
+      const numericId = parseInt(id, 10);
+      if (!isNaN(numericId)) {
+        loadFlowchart(numericId);
+      }
+    } else if (id === 'new') {
+      // Reset to new flowchart state
+      setFlowchartId(null);
+      setFlowchartName('My Automation Flowchart');
+      setNodes([]);
+      setConnections([]);
+      setVariables([]);
+      setComments([]);
+      setSelectedNodeId(null);
+      setViewport({ zoom: 1, panX: 0, panY: 0 });
+    }
+  }, [searchParams]);
+
+  const fetchFlowcharts = async () => {
+    setLoadingFlowcharts(true);
+    try {
+      const response = await fetch('/api/flowchart');
+      const data = await response.json();
+      if (response.ok && data.flowcharts) {
+        setFlowcharts(data.flowcharts);
+      }
+    } catch (error) {
+      console.error('Error fetching flowcharts:', error);
+    } finally {
+      setLoadingFlowcharts(false);
+    }
+  };
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -375,6 +428,34 @@ export default function FlowchartEditorPage() {
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
   const selectedNodeType = selectedNode ? getNodeType(selectedNode.type) : null;
 
+  // Get the id parameter
+  const id = searchParams.get('id');
+
+  // Show list/create page if no id is provided
+  if (!id) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold text-black">My Flowcharts</h1>
+            <Button onClick={() => router.push('/flowchart?id=new')}>
+              Create New Flowchart
+            </Button>
+          </div>
+
+          {loadingFlowcharts ? (
+            <Card className="text-center py-12">
+              <p className="text-gray-600">Loading flowcharts...</p>
+            </Card>
+          ) : (
+            <FlowchartListClient initialFlowcharts={flowcharts} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show editor if id is a number
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">

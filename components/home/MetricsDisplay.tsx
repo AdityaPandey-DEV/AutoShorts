@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
@@ -20,6 +20,7 @@ interface MetricsDisplayProps {
 export default function MetricsDisplay({ position, metrics }: MetricsDisplayProps) {
   const groupRef = useRef<THREE.Group>(null);
   const basePositionRef = useRef<[number, number, number]>(position);
+  const [isVisible, setIsVisible] = useState(true);
 
   // Update base position if prop changes
   if (basePositionRef.current[0] !== position[0] || 
@@ -28,6 +29,11 @@ export default function MetricsDisplay({ position, metrics }: MetricsDisplayProp
     basePositionRef.current = position;
   }
 
+  // Ensure component is visible on mount
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   useFrame((state) => {
     if (groupRef.current) {
       // Set base position
@@ -35,15 +41,19 @@ export default function MetricsDisplay({ position, metrics }: MetricsDisplayProp
       // Apply floating animation relative to base position
       const floatOffset = Math.sin(state.clock.elapsedTime * 0.3) * 0.05;
       groupRef.current.position.y += floatOffset;
+      // Ensure visibility
+      groupRef.current.visible = isVisible;
     }
   });
 
+  if (!isVisible) return null;
+
   return (
-    <group ref={groupRef} position={basePositionRef.current}>
+    <group ref={groupRef} position={basePositionRef.current} visible={isVisible}>
       {metrics.map((metric, index) => (
         <group key={index} position={[0, -index * 1.5, 0]}>
           {/* Background card */}
-          <mesh position={[0, 0, -0.1]}>
+          <mesh position={[0, 0, -0.1]} renderOrder={99}>
             <boxGeometry args={[3, 1, 0.2]} />
             <meshStandardMaterial
               color="#1F2937"
@@ -51,6 +61,7 @@ export default function MetricsDisplay({ position, metrics }: MetricsDisplayProp
               transparent
               metalness={0.2}
               roughness={0.6}
+              depthWrite={false}
             />
           </mesh>
 
@@ -61,6 +72,7 @@ export default function MetricsDisplay({ position, metrics }: MetricsDisplayProp
             color="#9CA3AF"
             anchorX="left"
             anchorY="middle"
+            renderOrder={100}
           >
             {metric.label}
           </Text>
@@ -116,6 +128,7 @@ function AnimatedCounter({
         anchorX="right"
         anchorY="middle"
         fontWeight="bold"
+        renderOrder={100}
       >
         {displayValue}{suffix}
       </Text>

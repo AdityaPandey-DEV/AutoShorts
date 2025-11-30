@@ -175,12 +175,12 @@ export default function AutomationFlowchart() {
   return (
     <div className="w-full h-[600px] bg-black rounded-lg overflow-hidden">
       <Canvas camera={{ position: [0, 3, 10], fov: 50 }}>
-        <Suspense fallback={null}>
-          {/* Lighting */}
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <pointLight position={[-10, -10, -5]} intensity={0.5} />
+        {/* Lighting - outside Suspense for immediate rendering */}
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[10, 10, 5]} intensity={1} />
+        <pointLight position={[-10, -10, -5]} intensity={0.5} />
 
+        <Suspense fallback={null}>
           {/* Environment */}
           <Environment preset="night" />
 
@@ -199,12 +199,6 @@ export default function AutomationFlowchart() {
           {/* Connections */}
           <FlowchartConnections connections={connections} />
 
-          {/* Metrics Display */}
-          <MetricsDisplay
-            position={[2, -3, 0]}
-            metrics={metrics}
-          />
-
           {/* Camera Controls */}
           <OrbitControls
             enablePan={true}
@@ -215,6 +209,12 @@ export default function AutomationFlowchart() {
             autoRotate={false}
           />
         </Suspense>
+
+        {/* Metrics Display - outside Suspense to ensure immediate rendering */}
+        <MetricsDisplay
+          position={[2, -3, 0]}
+          metrics={metrics}
+        />
       </Canvas>
 
       {/* Info Modal */}

@@ -227,12 +227,15 @@ export default function FlowchartEditorPage() {
     }
 
     // Position new node at the visible center of the canvas
-    // When viewport is at default (0, 0), world position [0, 0] maps to screen center
-    // So we position at [0, 0] which will be visible at the center
+    // The visible center in world coordinates is [viewport.panX, viewport.panY]
+    // This is because screen center (canvasWidth/2, canvasHeight/2) maps to world position (panX, panY)
+    // when using the worldToScreen conversion: screenX = (worldX - panX) * zoom + canvasWidth/2
+    // For screen center: canvasWidth/2 = (worldX - panX) * zoom + canvasWidth/2
+    // Therefore: worldX = panX (and similarly worldY = panY)
     const newNode: BlueprintNode = {
       id: `node-${Date.now()}`,
       type,
-      position: [0, 0], // Center of world space, which maps to screen center when viewport is at default
+      position: [viewport.panX, viewport.panY], // Visible center of current viewport
       label: nodeType.name,
       inputPins: nodeType.inputPins ? [...nodeType.inputPins] : [],
       outputPins: nodeType.outputPins ? [...nodeType.outputPins] : [],

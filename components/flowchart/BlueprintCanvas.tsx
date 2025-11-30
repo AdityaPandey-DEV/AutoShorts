@@ -50,6 +50,13 @@ export default function BlueprintCanvas({
   initialViewport,
   onViewportChange,
 }: BlueprintCanvasProps) {
+  // Wrapper for onNodeClick that also clears connection preview
+  const handleNodeClickWithClear = useCallback((nodeId: string) => {
+    onNodeClick(nodeId);
+    // Clear connection preview when clicking on a node (not a pin)
+    setConnectingFrom(null);
+    setConnectionPreview(null);
+  }, [onNodeClick]);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [viewport, setViewport] = useState<ViewportState>(
     initialViewport || {
@@ -99,12 +106,12 @@ export default function BlueprintCanvas({
       setPanStart({ x: e.clientX, y: e.clientY });
       e.preventDefault();
     } else if (e.button === 0) {
-      // Left click on canvas - deselect
+      // Left click on canvas - deselect and clear connection preview
       if (e.target === e.currentTarget) {
-        onNodeClick('');
+        handleNodeClickWithClear('');
       }
     }
-  }, [onNodeClick]);
+  }, [handleNodeClickWithClear]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (isPanning && panStart) {
@@ -438,7 +445,7 @@ export default function BlueprintCanvas({
                 nodeType={nodeType}
                 isSelected={selectedNodeId === node.id}
                 zoom={viewport.zoom}
-                onClick={() => onNodeClick(node.id)}
+                onClick={() => handleNodeClickWithClear(node.id)}
                 onPositionChange={(id, position) => {
                   // Position is already in world coordinates (calculated as delta from original)
                   const finalPosition = snapToGridEnabled

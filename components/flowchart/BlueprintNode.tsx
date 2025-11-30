@@ -50,21 +50,24 @@ export default function BlueprintNode({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) { // Left mouse button
+      e.stopPropagation();
       setIsDragging(true);
-      setDragStart({
-        x: e.clientX - node.position[0],
-        y: e.clientY - node.position[1],
-      });
+      // Store the initial mouse position in screen coordinates
+      // The parent will convert this to world coordinates
+      const canvasElement = e.currentTarget.closest('[data-canvas-container]');
+      if (canvasElement) {
+        const canvasRect = canvasElement.getBoundingClientRect();
+        setDragStart({
+          x: e.clientX - canvasRect.left,
+          y: e.clientY - canvasRect.top,
+        });
+      }
       onClick();
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && dragStart) {
-      const newX = e.clientX - dragStart.x;
-      const newY = e.clientY - dragStart.y;
-      onPositionChange(node.id, [newX, newY]);
-    }
+    // This is handled by global mouse move in useEffect
   };
 
   const handleMouseUp = () => {
@@ -73,12 +76,18 @@ export default function BlueprintNode({
   };
 
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging && dragStart) {
       const handleGlobalMouseMove = (e: MouseEvent) => {
-        if (dragStart) {
-          const newX = e.clientX - dragStart.x;
-          const newY = e.clientY - dragStart.y;
-          onPositionChange(node.id, [newX, newY]);
+        // Get canvas container to calculate screen coordinates
+        if (nodeRef.current) {
+          const canvasElement = nodeRef.current.closest('[data-canvas-container]');
+          if (canvasElement) {
+            const canvasRect = canvasElement.getBoundingClientRect();
+            // Pass screen coordinates - parent will convert to world
+            const screenX = e.clientX - canvasRect.left;
+            const screenY = e.clientY - canvasRect.top;
+            onPositionChange(node.id, [screenX, screenY]);
+          }
         }
       };
 
@@ -107,12 +116,12 @@ export default function BlueprintNode({
         isSelected ? 'shadow-lg shadow-blue-500/50' : 'shadow-md'
       }`}
       style={{
-        left: node.position[0],
-        top: node.position[1],
+        left: 0,
+        top: 0,
         width: node.width || NODE_WIDTH,
         minHeight: nodeHeight,
         transform: `scale(${Math.max(0.5, Math.min(2, zoom))})`,
-        transformOrigin: 'top left',
+        transformOrigin: 'center center',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

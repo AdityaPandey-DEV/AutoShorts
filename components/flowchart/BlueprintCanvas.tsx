@@ -115,16 +115,14 @@ export default function BlueprintCanvas({
       setPanStart({ x: e.clientX, y: e.clientY });
     }
 
-    // Update connection preview
+    // Update connection preview (in screen coordinates for SVG)
     if (connectingFrom) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
-        const worldPos = screenToWorld(
-          { x: e.clientX - rect.left, y: e.clientY - rect.top },
-          viewport,
-          canvasSize
-        );
-        setConnectionPreview({ x: worldPos.x, y: worldPos.y });
+        // Get mouse position relative to canvas
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        setConnectionPreview({ x: mouseX, y: mouseY });
       }
     }
   }, [isPanning, panStart, viewport, connectingFrom, canvasSize]);
@@ -179,10 +177,17 @@ export default function BlueprintCanvas({
       setConnectionPreview(null);
     } else if (direction === 'output') {
       // Starting connection from output pin
-      const pinX = direction === 'output' ? node.position[0] + 200 : node.position[0];
+      // Calculate pin position in screen coordinates
+      const screenPos = worldToScreen(
+        { x: node.position[0], y: node.position[1] },
+        viewport,
+        canvasSize
+      );
       const pinIndex = pins.findIndex(p => p.id === pinId);
-      const pinY = node.position[1] + 40 + pinIndex * 24;
-      setConnectingFrom({ nodeId, pinId, pinType: pin.type, x: pinX, y: pinY });
+      const pinOffsetY = 40 + pinIndex * 24;
+      const pinScreenX = screenPos.x + (200 * viewport.zoom); // Node width offset
+      const pinScreenY = screenPos.y + (pinOffsetY * viewport.zoom);
+      setConnectingFrom({ nodeId, pinId, pinType: pin.type, x: pinScreenX, y: pinScreenY });
       setConnectionValidation(null);
     }
   }, [nodes, connectingFrom, onConnectionCreate]);
@@ -224,15 +229,31 @@ export default function BlueprintCanvas({
 
     if (fromPinIndex === -1 || toPinIndex === -1) return null;
 
+    // Convert node positions to screen coordinates for SVG rendering
+    const fromScreenPos = worldToScreen(
+      { x: fromNode.position[0], y: fromNode.position[1] },
+      viewport,
+      canvasSize
+    );
+    const toScreenPos = worldToScreen(
+      { x: toNode.position[0], y: toNode.position[1] },
+      viewport,
+      canvasSize
+    );
+
+    // Calculate pin positions in screen space
+    const pinOffsetY = 40 + fromPinIndex * 24;
+    const toPinOffsetY = 40 + toPinIndex * 24;
+
     return {
       ...conn,
       fromPosition: [
-        fromNode.position[0] + 200,
-        fromNode.position[1] + 40 + fromPinIndex * 24,
+        fromScreenPos.x + (200 * viewport.zoom), // Node width offset in screen space
+        fromScreenPos.y + (pinOffsetY * viewport.zoom),
       ] as [number, number],
       toPosition: [
-        toNode.position[0],
-        toNode.position[1] + 40 + toPinIndex * 24,
+        toScreenPos.x,
+        toScreenPos.y + (toPinOffsetY * viewport.zoom),
       ] as [number, number],
     };
   }).filter((conn): conn is BlueprintConnection & { fromPosition: [number, number]; toPosition: [number, number] } => conn !== null);
@@ -240,6 +261,7 @@ export default function BlueprintCanvas({
   return (
     <div
       ref={canvasRef}
+      data-canvas-container
       className="relative w-full h-full overflow-hidden bg-[#1a1a1a]"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

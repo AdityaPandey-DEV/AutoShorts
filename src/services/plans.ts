@@ -44,7 +44,14 @@ export interface UpdatePlanInput extends Partial<CreatePlanInput> {
  * Get all active plans from database
  */
 export async function getAllPlans(includeInactive: boolean = false): Promise<Plan[]> {
-  const client = await pool.connect();
+  let client;
+  
+  try {
+    client = await pool.connect();
+  } catch (error) {
+    logger.error('Error connecting to database:', error);
+    throw new Error('Database connection failed. Please check your database configuration.');
+  }
   
   try {
     let query = 'SELECT * FROM subscription_plans';
@@ -72,11 +79,19 @@ export async function getAllPlans(includeInactive: boolean = false): Promise<Pla
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
-  } catch (error) {
+  } catch (error: any) {
+    // Check if it's a missing table error
+    if (error.code === '42P01') {
+      logger.error('Table subscription_plans does not exist. Please run database migrations.');
+      throw new Error('Database schema not initialized. Please run migrations.');
+    }
+    
     logger.error('Error fetching plans:', error);
     throw error;
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
 

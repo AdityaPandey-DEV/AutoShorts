@@ -1,6 +1,7 @@
-import { getAllPlans } from '@/src/services/plans';
+import { getAllPlans, Plan } from '@/src/services/plans';
 import PublicHeader from '@/components/layout/PublicHeader';
 import PublicPricingCard from '@/components/pricing/PublicPricingCard';
+import { logger } from '@/src/utils/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +12,17 @@ export const metadata = {
 };
 
 export default async function PricingPage() {
-  const plans = await getAllPlans(false); // Only active plans
+  let plans: Plan[] = [];
+  let hasError = false;
+
+  try {
+    plans = await getAllPlans(false); // Only active plans
+  } catch (error: any) {
+    logger.error('Error fetching plans in pricing page:', error);
+    hasError = true;
+    // Set plans to empty array to show fallback UI
+    plans = [];
+  }
 
   // Mark the middle plan as popular if there are 3 or more plans
   const popularIndex = plans.length >= 3 ? Math.floor(plans.length / 2) : -1;
@@ -30,7 +41,16 @@ export default async function PricingPage() {
           </p>
         </div>
 
-        {plans.length === 0 ? (
+        {hasError ? (
+          <div className="text-center py-12">
+            <p className="text-gray-400 text-lg mb-2">
+              Unable to load pricing plans at the moment.
+            </p>
+            <p className="text-gray-500 text-sm">
+              Please try again later or contact support if the issue persists.
+            </p>
+          </div>
+        ) : plans.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-400 text-lg">No pricing plans available at the moment. Please check back later.</p>
           </div>
